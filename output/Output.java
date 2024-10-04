@@ -1,4 +1,4 @@
-//Version Fri Oct 04 07:56:44 CEST 2024
+//Version Fri Oct 04 08:14:07 CEST 2024
 import java.util.*;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -176,29 +176,11 @@ class Team {
 class Player {
     public static void main(String args[]) {
         Scanner in = new Scanner(System.in);
-        int width = in.nextInt();
-        int height = in.nextInt(); // size of the map
+        Board board = new Board(in);
 
         // game loop
         while (true) {
-            int myScore = in.nextInt(); // Amount of ore delivered
-            int opponentScore = in.nextInt();
-            for (int i = 0; i < height; i++) {
-                for (int j = 0; j < width; j++) {
-                    String ore = in.next(); // amount of ore or "?" if unknown
-                    int hole = in.nextInt(); // 1 if cell has a hole
-                }
-            }
-            int entityCount = in.nextInt(); // number of entities visible to you
-            int radarCooldown = in.nextInt(); // turns left until a new radar can be requested
-            int trapCooldown = in.nextInt(); // turns left until a new trap can be requested
-            for (int i = 0; i < entityCount; i++) {
-                int entityId = in.nextInt(); // unique id of the entity
-                int entityType = in.nextInt(); // 0 for your robot, 1 for other robot, 2 for radar, 3 for trap
-                int x = in.nextInt();
-                int y = in.nextInt(); // position of the entity
-                int item = in.nextInt(); // if this entity is a robot, the item it is carrying (-1 for NONE, 2 for RADAR, 3 for TRAP, 4 for ORE)
-            }
+            board.update(in);
             for (int i = 0; i < 5; i++) {
 
                 // Write an action using System.out.println()
