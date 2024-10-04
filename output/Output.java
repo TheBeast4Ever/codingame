@@ -1,9 +1,114 @@
-//Version Fri Oct 04 08:14:07 CEST 2024
+//Version Fri Oct 04 17:30:14 CEST 2024
 import java.util.*;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.Random;
 import java.util.Scanner;
 import static java.lang.Math.*;
+class DigHereForOreRule implements IRule{
+    @Override
+    public Action evaluateAction(Board board, Entity currentRobot) {
+        Action action = Action.dig(currentRobot.pos);
+        Cell currentCell = board.getCell(currentRobot.pos);
+        if (currentCell.ore>0 && currentRobot.item.equals(EntityType.NOTHING)) {
+            action.setEfficiency(99);
+            System.err.println("Hum, it seems good to search ore here : (" + currentRobot.pos.x + " ; " + currentRobot.pos.y + "). Ore value is : " + currentCell.ore);
+        } else {
+            if (currentRobot.pos.x!=0 && !currentCell.hole) {
+                action.setEfficiency(50);
+            } else {
+                action.setEfficiency(0);
+            }
+        }
+        return action;
+    }
+}
+
+class Entity {
+    private static final Coord DEAD_POS = new Coord(-1, -1);
+
+    // Updated every turn
+    final int id;
+    final EntityType type;
+    final Coord pos;
+    final EntityType item;
+
+    // Computed for my robots
+    Action action;
+
+    Entity(Scanner in) {
+        id = in.nextInt();
+        type = EntityType.valueOf(in.nextInt());
+        pos = new Coord(in);
+        item = EntityType.valueOf(in.nextInt());
+    }
+
+    boolean isAlive() {
+        return !DEAD_POS.equals(pos);
+    }
+}
+class RequestRadarRule implements IRule {
+    @Override
+    public Action evaluateAction(Board board, Entity currentRobot) {
+        Action action = Action.request(EntityType.RADAR);
+        if (currentRobot.pos.x!=0) {
+            action.setEfficiency(0);
+        } else {
+            if (board.myRadarCooldown==0 && currentRobot.item.equals(EntityType.NOTHING)) {
+                action.setEfficiency(60);
+            } else {
+                action.setEfficiency(0);
+            }
+        }
+
+        return action;
+    }
+}
+class RequestTrapRule implements IRule {
+    @Override
+    public Action evaluateAction(Board board, Entity currentRobot) {
+        Action action = Action.request(EntityType.TRAP);
+        if (currentRobot.pos.x!=0) {
+            action.setEfficiency(0);
+        } else {
+            if (board.myTrapCooldown==0 && currentRobot.item.equals(EntityType.NOTHING)) {
+                action.setEfficiency(60);
+            } else {
+                action.setEfficiency(0);
+            }
+        }
+
+        return action;
+    }
+}
+
+class ActionDecider {
+    private List<IRule> rules = new ArrayList<IRule>();
+    
+    public ActionDecider() {
+        // Add rules here
+        rules.add(new RandomMoveRule());
+        rules.add(new BackToHeadQuarterRule());
+        rules.add(new DigHereForOreRule());
+        rules.add(new DigHereForPutRadarRule());
+        rules.add(new RequestRadarRule());
+        rules.add(new RequestTrapRule());
+    }
+    
+    public Action identifyBestActionToPerform(Board board, Entity allyRobot) {
+        Action bestPossibleAction = Action.none();
+        int bestEfficiency=0;
+        for (IRule rule:rules) {
+            Action currentAction = rule.evaluateAction(board, allyRobot);
+            if (currentAction.getEfficiency()>bestEfficiency) {
+                bestPossibleAction = currentAction;
+                bestEfficiency = currentAction.getEfficiency();
+            }
+        }
+        return bestPossibleAction;
+    }
+}
 enum EntityType {
     NOTHING, ALLY_ROBOT, ENEMY_ROBOT, RADAR, TRAP, AMADEUSIUM;
 
@@ -37,6 +142,15 @@ class Cell {
     }
 }
 class Action {
+    public int getEfficiency() {
+        return efficiency;
+    }
+
+    public void setEfficiency(int efficiency) {
+        this.efficiency = efficiency;
+    }
+
+    private int efficiency;
     final String command;
     final Coord pos;
     final EntityType item;
@@ -76,6 +190,21 @@ class Action {
             builder.append(' ').append(message);
         }
         return builder.toString();
+    }
+}
+class DigHereForPutRadarRule implements IRule {
+
+    @Override
+    public Action evaluateAction(Board board, Entity currentRobot) {
+        Action action = Action.dig(currentRobot.pos);
+        Cell currentCell = board.getCell(currentRobot.pos);
+        if (currentRobot.pos.x!=0 && currentRobot.item.equals(EntityType.RADAR) && !currentCell.known) {
+            action.setEfficiency(90);
+            System.err.println("Hum, it seems good to put a radar here : (" + currentRobot.pos.x + " ; " + currentRobot.pos.y + ")");
+        } else {
+            action.setEfficiency(0);
+        }
+        return action;
     }
 }
 
@@ -138,28 +267,31 @@ class Board {
         return cells[pos.y][pos.x];
     }
 }
+class BackToHeadQuarterRule implements IRule {
 
-class Entity {
-    private static final Coord DEAD_POS = new Coord(-1, -1);
+    @Override
+    public Action evaluateAction(Board board, Entity currentRobot) {
+        Action action=Action.move(new Coord(0, currentRobot.pos.y));
 
-    // Updated every turn
-    final int id;
-    final EntityType type;
-    final Coord pos;
-    final EntityType item;
-
-    // Computed for my robots
-    Action action;
-
-    Entity(Scanner in) {
-        id = in.nextInt();
-        type = EntityType.valueOf(in.nextInt());
-        pos = new Coord(in);
-        item = EntityType.valueOf(in.nextInt());
+        if (currentRobot.item.equals(EntityType.AMADEUSIUM)) {
+            action.setEfficiency(100);
+            System.err.println("Hey, i've ore, go back to head quarter : (" + currentRobot.pos.x + " ; " + currentRobot.pos.y + ")");
+        } else {
+            action.setEfficiency(0);
+        }
+        return action;
     }
+}
 
-    boolean isAlive() {
-        return !DEAD_POS.equals(pos);
+class RandomMoveRule implements IRule {
+
+    @Override
+    public Action evaluateAction(Board board, Entity currentRobot) {
+        Random rand = new Random();
+        int maxX=board.width,maxY= board.height;
+        Action action = Action.move(new Coord(rand.nextInt(maxX+1)-1, rand.nextInt(maxY+1)-1));
+        action.setEfficiency(1);
+        return action;
     }
 }
 
@@ -181,15 +313,20 @@ class Player {
         // game loop
         while (true) {
             board.update(in);
-            for (int i = 0; i < 5; i++) {
-
-                // Write an action using System.out.println()
-                // To debug: System.err.println("Debug messages...");
-
-                System.out.println("WAIT"); // WAIT|MOVE x y|DIG x y|REQUEST item
-            }
+            int nbofAliveRobots = board.myTeam.robots.size();
+            int nbOfDeadRobots = 5-nbofAliveRobots;
+            ActionDecider decider = new ActionDecider();
+            board.myTeam.robots.stream().filter(currentRobot-> currentRobot.isAlive()).forEach(currentRobot -> {
+                System.out.println(decider.identifyBestActionToPerform(board, currentRobot));
+            });
+            board.myTeam.robots.stream().filter(currentRobot-> !currentRobot.isAlive()).forEach(currentRobot -> {
+                System.out.println(Action.none());
+            });
         }
     }
+}
+interface IRule {
+    Action evaluateAction(Board board, Entity currentRobot);
 }
 
 class Coord {

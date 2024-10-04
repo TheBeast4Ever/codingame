@@ -1,4 +1,13 @@
 public class Action {
+    public int getEfficiency() {
+        return efficiency;
+    }
+
+    public void setEfficiency(int efficiency) {
+        this.efficiency = efficiency;
+    }
+
+    private int efficiency;
     final String command;
     final Coord pos;
     final EntityType item;

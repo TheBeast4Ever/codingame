@@ -8,13 +8,15 @@ public class Player {
         // game loop
         while (true) {
             board.update(in);
-            for (int i = 0; i < 5; i++) {
-
-                // Write an action using System.out.println()
-                // To debug: System.err.println("Debug messages...");
-
-                System.out.println("WAIT"); // WAIT|MOVE x y|DIG x y|REQUEST item
-            }
+            int nbofAliveRobots = board.myTeam.robots.size();
+            int nbOfDeadRobots = 5-nbofAliveRobots;
+            ActionDecider decider = new ActionDecider();
+            board.myTeam.robots.stream().filter(currentRobot-> currentRobot.isAlive()).forEach(currentRobot -> {
+                System.out.println(decider.identifyBestActionToPerform(board, currentRobot));
+            });
+            board.myTeam.robots.stream().filter(currentRobot-> !currentRobot.isAlive()).forEach(currentRobot -> {
+                System.out.println(Action.none());
+            });
         }
     }
 }
