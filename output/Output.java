@@ -1,4 +1,4 @@
-//Version Fri Oct 04 17:30:14 CEST 2024
+//Version Fri Oct 04 18:46:26 CEST 2024
 import java.util.*;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -21,6 +21,30 @@ class DigHereForOreRule implements IRule{
                 action.setEfficiency(0);
             }
         }
+        return action;
+    }
+}
+class FollowOreFoundMoveRule implements IRule {
+    @Override
+    public Action evaluateAction(Board board, Entity currentRobot) {
+        Coord coordToFollow = new Coord(0,0);
+        final int[] efficiency = {0};
+        if (!board.myVisibleOrePos.isEmpty() && currentRobot.item.equals(EntityType.NOTHING)) {
+            final Coord[] bestCoordToFollow = {new Coord(0, 0)};
+            final double[] bestDistance = {Integer.MAX_VALUE};
+            board.myVisibleOrePos.stream().forEach(currCord -> {
+                double currentDistance = currCord.distance(currentRobot.pos);
+                if (currentDistance< bestDistance[0]) {
+                    bestDistance[0] = currentDistance;
+                    bestCoordToFollow[0] = currCord;
+                }
+            });
+            coordToFollow=bestCoordToFollow[0];
+            efficiency[0] =90;
+            System.err.println("Hey, it smells ore at : (" + coordToFollow + ")");
+        }
+        Action action = Action.move(coordToFollow);
+        action.setEfficiency(efficiency[0]);
         return action;
     }
 }
@@ -89,6 +113,7 @@ class ActionDecider {
     public ActionDecider() {
         // Add rules here
         rules.add(new RandomMoveRule());
+        rules.add(new FollowOreFoundMoveRule());
         rules.add(new BackToHeadQuarterRule());
         rules.add(new DigHereForOreRule());
         rules.add(new DigHereForPutRadarRule());
@@ -223,6 +248,8 @@ class Board {
     Collection<Coord> myRadarPos;
     Collection<Coord> myTrapPos;
 
+    Collection<Coord> myVisibleOrePos;
+
     Board(Scanner in) {
         width = in.nextInt();
         height = in.nextInt();
@@ -233,9 +260,13 @@ class Board {
         myTeam.readScore(in);
         opponentTeam.readScore(in);
         cells = new Cell[height][width];
+        myVisibleOrePos = new ArrayList<Coord>();
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 cells[y][x] = new Cell(in);
+                for (int i =0; i<cells[y][x].ore; i++) {
+                    myVisibleOrePos.add(new Coord(x,y));
+                }
             }
         }
         int entityCount = in.nextInt();
@@ -267,6 +298,20 @@ class Board {
         return cells[pos.y][pos.x];
     }
 }
+class DigHereForPutTrapRule implements IRule {
+    @Override
+    public Action evaluateAction(Board board, Entity currentRobot) {
+        Action action = Action.dig(currentRobot.pos);
+        Cell currentCell = board.getCell(currentRobot.pos);
+        if (currentRobot.pos.x!=0 && currentRobot.item.equals(EntityType.TRAP) && currentCell.known && currentCell.ore==0) {
+            action.setEfficiency(90);
+            System.err.println("Hum, it seems good to put a trap here : (" + currentRobot.pos.x + " ; " + currentRobot.pos.y + ")");
+        } else {
+            action.setEfficiency(0);
+        }
+        return action;
+    }
+}
 class BackToHeadQuarterRule implements IRule {
 
     @Override
@@ -290,7 +335,7 @@ class RandomMoveRule implements IRule {
         Random rand = new Random();
         int maxX=board.width,maxY= board.height;
         Action action = Action.move(new Coord(rand.nextInt(maxX+1)-1, rand.nextInt(maxY+1)-1));
-        action.setEfficiency(1);
+        action.setEfficiency(10);
         return action;
     }
 }
@@ -317,9 +362,12 @@ class Player {
             int nbOfDeadRobots = 5-nbofAliveRobots;
             ActionDecider decider = new ActionDecider();
             board.myTeam.robots.stream().filter(currentRobot-> currentRobot.isAlive()).forEach(currentRobot -> {
-                System.out.println(decider.identifyBestActionToPerform(board, currentRobot));
+                Action currAction = decider.identifyBestActionToPerform(board, currentRobot);
+                System.err.println("Robot " + currentRobot.id + " is performing this action : " + currAction.toString() + " (" + currAction.getEfficiency() + ")");
+                System.out.println(currAction);
             });
             board.myTeam.robots.stream().filter(currentRobot-> !currentRobot.isAlive()).forEach(currentRobot -> {
+                System.err.println("I'm dead : " + currentRobot.id);
                 System.out.println(Action.none());
             });
         }
@@ -358,6 +406,14 @@ class Coord {
         result = PRIME * result + x;
         result = PRIME * result + y;
         return result;
+    }
+
+    public double computeDistanceFrom(Coord c) {
+        double distance=0;
+        int diffX = Math.abs(this.x-c.x);
+        int diffY = Math.abs(this.y-c.y);
+        distance = Math.sqrt(diffX*diffX + diffY*diffY);
+        return distance;
     }
 
     public boolean equals(Object obj) {

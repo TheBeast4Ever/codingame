@@ -7,6 +7,7 @@ public class ActionDecider {
     public ActionDecider() {
         // Add rules here
         rules.add(new RandomMoveRule());
+        rules.add(new FollowOreFoundMoveRule());
         rules.add(new BackToHeadQuarterRule());
         rules.add(new DigHereForOreRule());
         rules.add(new DigHereForPutRadarRule());

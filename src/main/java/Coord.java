@@ -32,6 +32,14 @@ public class Coord {
         return result;
     }
 
+    public double computeDistanceFrom(Coord c) {
+        double distance=0;
+        int diffX = Math.abs(this.x-c.x);
+        int diffY = Math.abs(this.y-c.y);
+        distance = Math.sqrt(diffX*diffX + diffY*diffY);
+        return distance;
+    }
+
     public boolean equals(Object obj) {
         if (this == obj)
             return true;

@@ -12,9 +12,12 @@ public class Player {
             int nbOfDeadRobots = 5-nbofAliveRobots;
             ActionDecider decider = new ActionDecider();
             board.myTeam.robots.stream().filter(currentRobot-> currentRobot.isAlive()).forEach(currentRobot -> {
-                System.out.println(decider.identifyBestActionToPerform(board, currentRobot));
+                Action currAction = decider.identifyBestActionToPerform(board, currentRobot);
+                System.err.println("Robot " + currentRobot.id + " is performing this action : " + currAction.toString() + " (" + currAction.getEfficiency() + ")");
+                System.out.println(currAction);
             });
             board.myTeam.robots.stream().filter(currentRobot-> !currentRobot.isAlive()).forEach(currentRobot -> {
+                System.err.println("I'm dead : " + currentRobot.id);
                 System.out.println(Action.none());
             });
         }

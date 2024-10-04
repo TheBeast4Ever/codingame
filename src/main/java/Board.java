@@ -15,6 +15,8 @@ public class Board {
     Collection<Coord> myRadarPos;
     Collection<Coord> myTrapPos;
 
+    Collection<Coord> myVisibleOrePos;
+
     Board(Scanner in) {
         width = in.nextInt();
         height = in.nextInt();
@@ -25,9 +27,13 @@ public class Board {
         myTeam.readScore(in);
         opponentTeam.readScore(in);
         cells = new Cell[height][width];
+        myVisibleOrePos = new ArrayList<Coord>();
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 cells[y][x] = new Cell(in);
+                for (int i =0; i<cells[y][x].ore; i++) {
+                    myVisibleOrePos.add(new Coord(x,y));
+                }
             }
         }
         int entityCount = in.nextInt();
