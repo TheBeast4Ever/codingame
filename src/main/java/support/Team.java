@@ -1,10 +1,12 @@
+package support;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Scanner;
 
 public class Team {
-    int score;
-    Collection<Entity> robots;
+    public int score;
+    public Collection<Entity> robots;
 
     void readScore(Scanner in) {
         score = in.nextInt();

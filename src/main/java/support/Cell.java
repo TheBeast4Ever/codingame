@@ -1,9 +1,11 @@
+package support;
+
 import java.util.Scanner;
 
 public class Cell {
-    boolean known;
-    int ore;
-    boolean hole;
+    public boolean known;
+    public int ore;
+    public boolean hole;
 
     Cell(boolean known, int ore, boolean hole) {
         this.known = known;

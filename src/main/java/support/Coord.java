@@ -1,11 +1,13 @@
+package support;
+
 import static java.lang.Math.*;
 import java.util.Scanner;
 
 public class Coord {
-    final int x;
-    final int y;
+    public final int x;
+    public final int y;
 
-    Coord(int x, int y) {
+    public Coord(int x, int y) {
         this.x = x;
         this.y = y;
     }
@@ -20,7 +22,7 @@ public class Coord {
 
     // Manhattan distance (for 4 directions maps)
     // see: https://en.wikipedia.org/wiki/Taxicab_geometry
-    int distance(Coord other) {
+    public int distance(Coord other) {
         return abs(x - other.x) + abs(y - other.y);
     }
 
