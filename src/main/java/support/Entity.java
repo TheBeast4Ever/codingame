@@ -12,7 +12,7 @@ public class Entity {
     public final EntityType item;
 
     // Computed for my robots
-    Action action;
+    public Action action;
 
     public Entity(Scanner in) {
         id = in.nextInt();

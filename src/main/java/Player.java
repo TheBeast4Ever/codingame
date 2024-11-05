@@ -1,7 +1,4 @@
-import support.Action;
-import support.ActionDecider;
-import support.Board;
-import support.Entity;
+import support.*;
 
 import java.util.*;
 
@@ -21,17 +18,20 @@ public class Player {
                 Entity currentRobot =  robots[i];
                 if (currentRobot.isAlive()) {
                     List<Action> possibleActions = decider.getPossibleActionsSortedByEfficiency(board, currentRobot);
-                    System.err.println("Robot " + currentRobot.id + " has " + possibleActions.size() + " possible actions");
-                    Optional<Action> bestActionToPerform = possibleActions.stream().filter(a->!actionsToPlay.containsValue(a)).findFirst();
+                    //System.err.println("Robot " + currentRobot.id + " has " + possibleActions.size() + " possible actions");
+                    Optional<Action> bestActionToPerform = possibleActions.stream().filter(a->!actionsToPlay.containsValue(a) || a.efficiency>=90).findFirst();
                     if (bestActionToPerform.isPresent()) {
+                        if (currentRobot.action == null || bestActionToPerform.get().efficiency>currentRobot.action.efficiency) {
+                            currentRobot.action = bestActionToPerform.get();
+                        }
                         actionsToPlay.put(currentRobot.id, bestActionToPerform.get());
+                        System.err.println("Robot " + currentRobot.id + " perform action with efficiency " + bestActionToPerform.get().efficiency);
                         System.out.println(bestActionToPerform.get());
                     } else  {
                         System.err.println("Strange for #" + currentRobot.id);
                         System.out.println(Action.none());
                     }
                 } else {
-                    System.err.println("End of the game for robot #" + currentRobot.id);
                     System.out.println(Action.none());
                 }
             }

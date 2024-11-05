@@ -1,6 +1,7 @@
 package support;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class Board {
     // Given at startup
@@ -17,14 +18,19 @@ public class Board {
     public Collection<Coord> myRadarPos;
     public Collection<Coord> myTrapPos;
 
+    public Collection<Coord> myPossibleTrapPositions;
+
     public Collection<Coord> myVisibleOrePos;
 
     public Integer roundNumber;
+
+    public MessagesHub hub;
 
     public Board(Scanner in) {
         width = in.nextInt();
         height = in.nextInt();
         roundNumber=0;
+        hub = new MessagesHub();
     }
 
     public void update(Scanner in) {
@@ -61,6 +67,24 @@ public class Board {
                 myTrapPos.add(entity.pos);
             }
         }
+        myPossibleTrapPositions = new ArrayList<Coord>();
+        for(int y=0;y<this.height; y++) {
+            Coord currentCoord = new Coord(1, y);
+            if ( !this.myTrapPos.contains(currentCoord)) {
+                myPossibleTrapPositions.add(currentCoord);
+            }
+        }
+        updateEnemyRobotsStatus();
+    }
+
+    private void updateEnemyRobotsStatus() {
+        opponentTeam.robots.stream().forEach(opponentRobot -> {
+            // System.err.println("opponent " + opponentRobot.id + " (" + opponentRobot.pos + ") has this item : " + opponentRobot.item);
+            if (opponentRobot.item.equals(EntityType.TRAP)) {
+                System.err.println("a trap a trap a trap a trap : " + opponentRobot.id);
+                hub.pub(new Message("TRAP-ENEMY", "Enemy has a trap at this position : " + opponentRobot.pos, 1));
+            }
+        });
     }
 
     public boolean cellExist(Coord pos) {

@@ -12,13 +12,16 @@ public class ActionDecider {
     public ActionDecider() {
         // Add rules here
         rules.add(new RandomMoveRule());
-        rules.add(new RandomMoveFor50FirstRoundsRule());
+        //rules.add(new RandomMoveFor100FirstRoundsRule());
+        rules.add(new FollowCurrentActionRule());
         rules.add(new FollowOreFoundMoveRule());
         rules.add(new BackToHeadQuarterRule());
         rules.add(new DigHereForOreRule());
         rules.add(new DigHereForPutRadarRule());
         rules.add(new DigHereForPutTrapRule());
         rules.add(new RequestRadarRule());
+        // rules.add(new SmartKamikazeRule());
+        rules.add(new GoToBestPlaceToPutRadarRule());
         rules.add(new RequestTrapRule());
     }
     

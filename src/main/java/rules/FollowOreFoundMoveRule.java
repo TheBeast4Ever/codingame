@@ -20,6 +20,7 @@ public class FollowOreFoundMoveRule implements IRule {
                 }
             });
             coordToFollow=bestCoordToFollow[0];
+            System.err.println("best to follow : " + coordToFollow);
         }
         Action action = Action.move(coordToFollow);
         action.efficiency = efficiency[0];
@@ -29,6 +30,6 @@ public class FollowOreFoundMoveRule implements IRule {
 
     @Override
     public String getMessage(Entity currentRobot) {
-        return ("Hey, it smells ore (#" + currentRobot.id + ")");
+        return ("FOFM");
     }
 }

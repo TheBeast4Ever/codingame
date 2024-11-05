@@ -7,7 +7,7 @@ import support.Entity;
 
 import java.util.Random;
 
-public class RandomMoveFor50FirstRoundsRule implements IRule {
+public class RandomMoveFor100FirstRoundsRule implements IRule {
     @Override
     public Action evaluateAction(Board board, Entity currentRobot) {
         Random rand = new Random();
@@ -15,7 +15,7 @@ public class RandomMoveFor50FirstRoundsRule implements IRule {
         int maxX=board.width-offset,maxY= board.height;
         Action action = Action.move(new Coord(offset+rand.nextInt(maxX+1)-1, rand.nextInt(maxY+1)-1));
         int efficiency=0;
-        if (board.roundNumber<=50) {
+        if (board.roundNumber<=100) {
             efficiency=20;
         }
         action.efficiency = efficiency;
@@ -25,6 +25,6 @@ public class RandomMoveFor50FirstRoundsRule implements IRule {
 
     @Override
     public String getMessage(Entity currentRobot) {
-        return ("My brain is off for the first 50 rounds (#" + currentRobot.id + ")");
+        return ("RMF100");
     }
 }

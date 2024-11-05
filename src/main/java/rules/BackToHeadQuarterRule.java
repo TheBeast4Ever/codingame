@@ -21,7 +21,7 @@ public class BackToHeadQuarterRule implements IRule {
 
     @Override
     public String getMessage(Entity currentRobot) {
-        return ("Hey, i've ore, go back to head quarter : (" + currentRobot.pos.x + " ; " + currentRobot.pos.y + ")");
+        return ("BTHQ");
     }
 
 

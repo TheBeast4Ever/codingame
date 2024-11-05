@@ -22,6 +22,6 @@ public class RandomMoveRule implements IRule {
 
     @Override
     public String getMessage(Entity currentRobot) {
-        return ("My brain is off (#" + currentRobot.id + ")");
+        return ("RM");
     }
 }

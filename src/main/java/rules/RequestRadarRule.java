@@ -14,7 +14,7 @@ public class RequestRadarRule implements IRule {
             action.efficiency=0;
         } else {
             if (board.myRadarCooldown==0 && currentRobot.item.equals(EntityType.NOTHING)) {
-                action.efficiency=60;
+                action.efficiency=98;
             } else {
                 action.efficiency=0;
             }
@@ -26,6 +26,6 @@ public class RequestRadarRule implements IRule {
 
     @Override
     public String getMessage(Entity currentRobot) {
-        return ("It's time to get a radar (#" + currentRobot.id + ")");
+        return ("RR");
     }
 }
