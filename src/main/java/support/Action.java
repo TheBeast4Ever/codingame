@@ -1,10 +1,13 @@
 package support;
 
+import rules.EfficiencyRate;
+import rules.IRule;
+
 import java.util.Objects;
 
 public class Action implements Comparable<Action> {
 
-    public int efficiency;
+    public EfficiencyRate efficiencyRate;
     public final String command;
     public final Coord pos;
     public final EntityType item;
@@ -48,7 +51,7 @@ public class Action implements Comparable<Action> {
 
     @Override
     public int compareTo(Action otherAction) {
-        return Integer.compare(this.efficiency,otherAction.efficiency);
+        return Integer.compare(this.efficiencyRate.getValue(),otherAction.efficiencyRate.getValue());
     }
 
     @Override

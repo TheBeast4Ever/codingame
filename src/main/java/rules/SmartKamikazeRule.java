@@ -33,9 +33,9 @@ public class SmartKamikazeRule implements IRule {
                 // mode veille
                 action = Action.none();
             }
-            action.efficiency=100;
+            action.efficiencyRate=EfficiencyRate.MAXIMUM;
         } else {
-            action.efficiency=0;
+            action.efficiencyRate=EfficiencyRate.USELESS;
         }
 
         action.message = getMessage(currentRobot);

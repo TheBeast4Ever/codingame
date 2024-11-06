@@ -9,9 +9,9 @@ public class DigHereForPutTrapRule implements IRule {
         Action action = Action.dig(currentRobot.pos);
         Cell currentCell = board.getCell(currentRobot.pos);
         if (currentRobot.pos.x!=0 && currentRobot.item.equals(EntityType.TRAP) && currentCell.known && currentCell.ore==1  && !board.myTrapPos.contains(currentRobot.pos)) {
-            action.efficiency = 80;
+            action.efficiencyRate = EfficiencyRate.HIGH;
         } else {
-            action.efficiency = 0;
+            action.efficiencyRate = EfficiencyRate.USELESS;
         }
         action.message = getMessage(currentRobot);
         return action;

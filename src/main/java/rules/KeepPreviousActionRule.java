@@ -4,21 +4,21 @@ import support.Action;
 import support.Board;
 import support.Entity;
 
-public class FollowCurrentActionRule implements IRule {
+public class KeepPreviousActionRule implements IRule {
     @Override
     public Action evaluateAction(Board board, Entity currentRobot) {
-        Action action = currentRobot.action;
+        Action action = currentRobot.previousAction;
         if (action != null) {
             return action;
         } else {
             action = Action.none();
-            action.efficiency=0;
+            action.efficiencyRate=EfficiencyRate.USELESS;
             return action;
         }
     }
 
     @Override
     public String getMessage(Entity currentRobot) {
-        return ("FCA");
+        return ("KPA");
     }
 }

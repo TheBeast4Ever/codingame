@@ -8,20 +8,20 @@ public class BackToHeadQuarterRule implements IRule {
     @Override
     public Action evaluateAction(Board board, Entity currentRobot) {
         Action action = Action.move(new Coord(0, currentRobot.pos.y));
-        int efficiency=0;
+        EfficiencyRate efficiencyRateToCompute = EfficiencyRate.USELESS;
 
         if (currentRobot.item.equals(EntityType.AMADEUSIUM)) {
-            efficiency=100;
+            efficiencyRateToCompute= EfficiencyRate.MAXIMUM;
 
         }
-        action.efficiency = efficiency;
+        action.efficiencyRate = efficiencyRateToCompute;
         action.message = getMessage(currentRobot);
         return action;
     }
 
     @Override
     public String getMessage(Entity currentRobot) {
-        return ("BTHQ");
+        return ("HQ");
     }
 
 

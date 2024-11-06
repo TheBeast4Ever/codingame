@@ -12,38 +12,25 @@ public class ActionDecider {
     public ActionDecider() {
         // Add rules here
         rules.add(new RandomMoveRule());
-        //rules.add(new RandomMoveFor100FirstRoundsRule());
-        rules.add(new FollowCurrentActionRule());
+        // rules.add(new RandomMoveFor100FirstRoundsRule());
+        // rules.add(new KeepPreviousActionRule());
         rules.add(new FollowOreFoundMoveRule());
         rules.add(new BackToHeadQuarterRule());
-        rules.add(new DigHereForOreRule());
-        rules.add(new DigHereForPutRadarRule());
-        rules.add(new DigHereForPutTrapRule());
-        rules.add(new RequestRadarRule());
+        rules.add(new DigForOreRule());
+        // rules.add(new DigHereForPutRadarRule());
+        // rules.add(new DigHereForPutTrapRule());
+        // rules.add(new RequestRadarRule());
         // rules.add(new SmartKamikazeRule());
-        rules.add(new GoToBestPlaceToPutRadarRule());
-        rules.add(new RequestTrapRule());
-    }
-    
-    public Action identifyBestActionToPerform(Board board, Entity allyRobot) {
-        Action bestPossibleAction = Action.none();
-        int bestEfficiency=0;
-        for (IRule rule:rules) {
-            Action currentAction = rule.evaluateAction(board, allyRobot);
-            if (currentAction.efficiency>bestEfficiency) {
-                bestPossibleAction = currentAction;
-                bestEfficiency = currentAction.efficiency;
-            }
-        }
-        return bestPossibleAction;
+        // rules.add(new GoToBestPlaceToPutRadarRule());
+        // rules.add(new RequestTrapRule());
     }
 
-    public List<Action> getPossibleActionsSortedByEfficiency(Board board, Entity allyRobot) {
+    public List<Action> computeEligibleActionsRankedByEfficiency(Board board, Entity allyRobot) {
         List<Action> actionsList = new ArrayList<>();
         for (IRule rule:rules) {
-            Action currentAction = rule.evaluateAction(board, allyRobot);
-            if (currentAction.efficiency>0) {
-                actionsList.add(currentAction);
+            Action actionComputed = rule.evaluateAction(board, allyRobot);
+            if (actionComputed.efficiencyRate.getValue()>EfficiencyRate.USELESS.getValue()) {
+                actionsList.add(actionComputed);
             }
         }
         Collections.reverse(actionsList);

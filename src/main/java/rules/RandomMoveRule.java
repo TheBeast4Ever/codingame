@@ -15,7 +15,7 @@ public class RandomMoveRule implements IRule {
         Random rand = new Random();
         int maxX=board.width,maxY= board.height;
         Action action = Action.move(new Coord(rand.nextInt(maxX+1)-1, rand.nextInt(maxY+1)-1));
-        action.efficiency=10;
+        action.efficiencyRate=EfficiencyRate.WEAK;
         action.message = getMessage(currentRobot);
         return action;
     }

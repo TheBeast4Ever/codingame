@@ -11,12 +11,12 @@ public class RequestTrapRule implements IRule {
     public Action evaluateAction(Board board, Entity currentRobot) {
         Action action = Action.request(EntityType.TRAP);
         if (currentRobot.pos.x!=0) {
-            action.efficiency=0;
+            action.efficiencyRate=EfficiencyRate.USELESS;
         } else {
             if (board.myTrapCooldown==0 && currentRobot.item.equals(EntityType.NOTHING)) {
-                action.efficiency=99;
+                action.efficiencyRate=EfficiencyRate.MAXIMUM;
             } else {
-                action.efficiency=0;
+                action.efficiencyRate=EfficiencyRate.USELESS;
             }
         }
 
@@ -26,6 +26,6 @@ public class RequestTrapRule implements IRule {
 
     @Override
     public String getMessage(Entity currentRobot) {
-        return ("RT");
+        return ("REQ T");
     }
 }

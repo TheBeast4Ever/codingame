@@ -6,9 +6,9 @@ public class GoToBestPlaceToPutRadarRule implements IRule {
     @Override
     public Action evaluateAction(Board board, Entity currentRobot) {
         Coord coordToFollow = new Coord(0,0);
-        int efficiency = 0;
+        EfficiencyRate efficiencyRate = EfficiencyRate.USELESS;
         if (currentRobot.item.equals(EntityType.RADAR)) {
-            efficiency=70;
+            efficiencyRate=EfficiencyRate.HIGH;
             Coord bestCoordToFollow = new Coord(currentRobot.pos.x, currentRobot.pos.y);
             double bestDistance = Integer.MAX_VALUE;
             for (int x=1; x < board.width; x++) {
@@ -26,14 +26,14 @@ public class GoToBestPlaceToPutRadarRule implements IRule {
             }
 
             if (bestCoordToFollow.equals(new Coord(currentRobot.pos.x, currentRobot.pos.y))){
-                efficiency=0;
+                efficiencyRate=EfficiencyRate.USELESS;
             }
 
             coordToFollow=bestCoordToFollow;
             System.err.println("best move to put radar : " + coordToFollow);
         }
         Action action = Action.move(coordToFollow);
-        action.efficiency = efficiency;
+        action.efficiencyRate = efficiencyRate;
         action.message = getMessage(currentRobot);
         return action;
     }

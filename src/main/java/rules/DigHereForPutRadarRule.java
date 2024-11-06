@@ -10,9 +10,9 @@ public class DigHereForPutRadarRule implements IRule {
         Action action = Action.dig(currentRobot.pos);
         Cell currentCell = board.getCell(currentRobot.pos);
         if (currentRobot.pos.x>0 && currentRobot.item.equals(EntityType.RADAR)  && !currentCell.hole  && !currentCell.known && !board.myTrapPos.contains(currentRobot.pos)) {
-            action.efficiency = 80;
+            action.efficiencyRate = EfficiencyRate.HIGH;
         } else {
-            action.efficiency = 0;
+            action.efficiencyRate = EfficiencyRate.USELESS;
         }
         action.message = getMessage(currentRobot);
         return action;
