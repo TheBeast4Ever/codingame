@@ -8,7 +8,7 @@ public class KeepPreviousActionRule implements IRule {
     @Override
     public Action evaluateAction(Board board, Entity currentRobot) {
         Action action = currentRobot.previousAction;
-        if (action != null) {
+        if (action != null && action.message.equals("FOFM") && !action.pos.equals(currentRobot.pos)) {
             return action;
         } else {
             action = Action.none();

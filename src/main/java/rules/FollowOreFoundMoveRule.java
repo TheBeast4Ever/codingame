@@ -22,7 +22,7 @@ public class FollowOreFoundMoveRule implements IRule {
     public Action evaluateAction(Board board, Entity currentRobot) {
         Coord coordToFollow = new Coord(0,0);
         final EfficiencyRate[] efficiency = {EfficiencyRate.USELESS};
-        if ((!board.myVisibleOrePos.isEmpty()) && currentRobot.item.equals(EntityType.NOTHING)) {
+        if (!board.myVisibleOrePos.isEmpty() && currentRobot.item.equals(EntityType.NOTHING)) {
             final Coord[] bestCoordToFollow = {new Coord(0, 0)};
             final double[] bestDistance = {Integer.MAX_VALUE};
             board.myVisibleOrePos.stream().filter(pos-> !board.myTrapPos.contains(pos)).forEach(currCord -> {
@@ -36,9 +36,10 @@ public class FollowOreFoundMoveRule implements IRule {
             coordToFollow=bestCoordToFollow[0];
             System.err.println("best to follow : " + coordToFollow);
         } else if (isOreFoundAnywhere(board) && currentRobot.item.equals(EntityType.NOTHING)) {
+            System.err.println("msg received by " + currentRobot.id);
             Message message = board.hub.consumeAndRemove();
             coordToFollow = message.pos;
-            efficiency[0] = EfficiencyRate.HIGH;
+            efficiency[0] = EfficiencyRate.MAXIMUM;
         }
         Action action = Action.move(coordToFollow);
         action.efficiencyRate = efficiency[0];

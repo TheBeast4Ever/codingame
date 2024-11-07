@@ -1,4 +1,4 @@
-//Version Wed Nov 06 23:16:53 CET 2024
+//Version Thu Nov 07 08:39:16 CET 2024
 import java.util.*;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -54,7 +54,7 @@ class FollowOreFoundMoveRule implements IRule {
     public Action evaluateAction(Board board, Entity currentRobot) {
         Coord coordToFollow = new Coord(0,0);
         final EfficiencyRate[] efficiency = {EfficiencyRate.USELESS};
-        if ((!board.myVisibleOrePos.isEmpty()) && currentRobot.item.equals(EntityType.NOTHING)) {
+        if (!board.myVisibleOrePos.isEmpty() && currentRobot.item.equals(EntityType.NOTHING)) {
             final Coord[] bestCoordToFollow = {new Coord(0, 0)};
             final double[] bestDistance = {Integer.MAX_VALUE};
             board.myVisibleOrePos.stream().filter(pos-> !board.myTrapPos.contains(pos)).forEach(currCord -> {
@@ -68,9 +68,10 @@ class FollowOreFoundMoveRule implements IRule {
             coordToFollow=bestCoordToFollow[0];
             System.err.println("best to follow : " + coordToFollow);
         } else if (isOreFoundAnywhere(board) && currentRobot.item.equals(EntityType.NOTHING)) {
+            System.err.println("msg received by " + currentRobot.id);
             Message message = board.hub.consumeAndRemove();
             coordToFollow = message.pos;
-            efficiency[0] = EfficiencyRate.HIGH;
+            efficiency[0] = EfficiencyRate.MAXIMUM;
         }
         Action action = Action.move(coordToFollow);
         action.efficiencyRate = efficiency[0];
@@ -90,8 +91,10 @@ class DigHereForPutTrapRule implements IRule {
     public Action evaluateAction(Board board, Entity currentRobot) {
         Action action = Action.dig(currentRobot.pos);
         Cell currentCell = board.getCell(currentRobot.pos);
-        if (currentRobot.pos.x!=0 && currentRobot.item.equals(EntityType.TRAP) && currentCell.known && currentCell.ore==1  && !board.myTrapPos.contains(currentRobot.pos)) {
+        if (currentRobot.pos.x!=0 && currentRobot.item.equals(EntityType.TRAP) && currentCell.known && !board.myTrapPos.contains(currentRobot.pos)) {
             action.efficiencyRate = EfficiencyRate.HIGH;
+        } else if (currentRobot.pos.x!=0 && currentRobot.item.equals(EntityType.TRAP) && !board.myTrapPos.contains(currentRobot.pos)) {
+            action.efficiencyRate = EfficiencyRate.AVERAGE;
         } else {
             action.efficiencyRate = EfficiencyRate.USELESS;
         }
@@ -351,16 +354,16 @@ class ActionDecider {
         // Add rules here
         rules.add(new RandomMoveRule());
         // rules.add(new RandomMoveFor100FirstRoundsRule());
-        // rules.add(new KeepPreviousActionRule());
+        rules.add(new KeepPreviousActionRule());
         rules.add(new FollowOreFoundMoveRule());
         rules.add(new BackToHeadQuarterRule());
         rules.add(new DigForOreRule());
-        // rules.add(new DigHereForPutRadarRule());
-        // rules.add(new DigHereForPutTrapRule());
-        // rules.add(new RequestRadarRule());
+        rules.add(new DigHereForPutRadarRule());
+        rules.add(new DigHereForPutTrapRule());
+        rules.add(new RequestRadarRule());
         // rules.add(new SmartKamikazeRule());
         // rules.add(new GoToBestPlaceToPutRadarRule());
-        // rules.add(new RequestTrapRule());
+        rules.add(new RequestTrapRule());
     }
 
     public List<Action> computeEligibleActionsRankedByEfficiency(Board board, Entity allyRobot) {
@@ -371,6 +374,7 @@ class ActionDecider {
                 actionsList.add(actionComputed);
             }
         }
+        Collections.sort(actionsList);
         Collections.reverse(actionsList);
         return actionsList;
     }
@@ -487,6 +491,7 @@ class MessagesHub {
 
     public void pub(Message message) {
         messages.add(message);
+        System.err.println("New message : " + message);
     }
 
     public Message consumeWithoutRemove() {
@@ -584,7 +589,7 @@ class Player {
                     currentRobot.previousAction = myPreviousActionsByRobot.get(currentRobot.id);
                     if (currentRobot.previousAction.command.equals("DIG")) {
                         if (currentRobot.item.equals(EntityType.AMADEUSIUM)) {
-                            board.hub.pub(new Message("ORE-FOUND", "Ore has been found at this position : " + currentRobot.pos, currentRobot.pos,1));
+                            board.hub.pub(new Message("ORE-FOUND", "Ore found (" + currentRobot.pos + ")", currentRobot.pos,1));
                         } else if (currentRobot.item.equals(EntityType.NOTHING)) {
                             emptyHoles.add(currentRobot.pos);
                         }
@@ -625,7 +630,7 @@ class KeepPreviousActionRule implements IRule {
     @Override
     public Action evaluateAction(Board board, Entity currentRobot) {
         Action action = currentRobot.previousAction;
-        if (action != null) {
+        if (action != null && action.message.equals("FOFM") && !action.pos.equals(currentRobot.pos)) {
             return action;
         } else {
             action = Action.none();
@@ -731,7 +736,7 @@ class Message {
         return "Message{" +
                 "id=" + id +
                 ", header='" + header + '\'' +
-                ", content='" + content + '\'' +
+                ", pos='" + pos + '\'' +
                 ", priority=" + priority +
                 '}';
     }

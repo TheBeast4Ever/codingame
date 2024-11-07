@@ -28,7 +28,7 @@ public class Message {
         return "Message{" +
                 "id=" + id +
                 ", header='" + header + '\'' +
-                ", content='" + content + '\'' +
+                ", pos='" + pos + '\'' +
                 ", priority=" + priority +
                 '}';
     }
