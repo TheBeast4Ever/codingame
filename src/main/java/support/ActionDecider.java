@@ -21,7 +21,7 @@ public class ActionDecider {
         rules.add(new DigHereForPutTrapRule());
         rules.add(new RequestRadarRule());
         // rules.add(new SmartKamikazeRule());
-        // rules.add(new GoToBestPlaceToPutRadarRule());
+        rules.add(new GoToBestPlaceToPutRadarRule());
         rules.add(new RequestTrapRule());
     }
 

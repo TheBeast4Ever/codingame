@@ -9,21 +9,7 @@ public class GoToBestPlaceToPutRadarRule implements IRule {
         EfficiencyRate efficiencyRate = EfficiencyRate.USELESS;
         if (currentRobot.item.equals(EntityType.RADAR)) {
             efficiencyRate=EfficiencyRate.HIGH;
-            Coord bestCoordToFollow = new Coord(currentRobot.pos.x, currentRobot.pos.y);
-            double bestDistance = Integer.MAX_VALUE;
-            for (int x=1; x < board.width; x++) {
-                for (int y=0; y < board.height; y++) {
-                    Coord currCord = new Coord(x,y);
-                    if (!board.getCell(currCord).known && !board.myTrapPos.contains(currCord)) {
-                        double currentDistance = currCord.distance(currentRobot.pos);
-                        if (currentDistance<bestDistance) {
-                            bestDistance = currentDistance;
-                            bestCoordToFollow = currCord;
-                        }
-                    }
-
-                }
-            }
+            Coord bestCoordToFollow = board.getNearestIdealRadarPosition(currentRobot.pos);
 
             if (bestCoordToFollow.equals(new Coord(currentRobot.pos.x, currentRobot.pos.y))){
                 efficiencyRate=EfficiencyRate.USELESS;

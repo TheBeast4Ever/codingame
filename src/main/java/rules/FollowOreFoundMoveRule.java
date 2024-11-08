@@ -35,7 +35,8 @@ public class FollowOreFoundMoveRule implements IRule {
             });
             coordToFollow=bestCoordToFollow[0];
             System.err.println("best to follow : " + coordToFollow);
-        } else if (isOreFoundAnywhere(board) && currentRobot.item.equals(EntityType.NOTHING)) {
+        } else if (isOreFoundAnywhere(board) && currentRobot.item.equals(EntityType.NOTHING)
+        && (currentRobot.previousAction == null || !currentRobot.previousAction.command.equals("FOFM"))) {
             System.err.println("msg received by " + currentRobot.id);
             Message message = board.hub.consumeAndRemove();
             coordToFollow = message.pos;

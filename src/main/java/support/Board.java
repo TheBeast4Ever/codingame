@@ -78,4 +78,26 @@ public class Board {
     public Cell getCell(Coord pos) {
         return cells[pos.y][pos.x];
     }
+
+    public Coord getNearestIdealRadarPosition(Coord actualPosition) {
+        Coord nearestPosition = actualPosition;
+
+        double bestDistance = Integer.MAX_VALUE;
+        for (int x=28; x > 0; x=x-5) {
+            for (int y=12; y >= 0; y=y-5) {
+                Coord currCord = new Coord(x,y);
+                if (!myTrapPos.contains(currCord) && !myRadarPos.contains(currCord)) {
+                    double currentDistance = currCord.distance(actualPosition);
+                    /*if (currentDistance<bestDistance) {
+                        bestDistance = currentDistance;
+                        nearestPosition = currCord;
+                    }*/
+                    nearestPosition = currCord;
+                    break;
+                }
+            }
+        }
+
+        return nearestPosition;
+    }
 }

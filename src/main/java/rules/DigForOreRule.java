@@ -8,11 +8,15 @@ public class DigForOreRule implements IRule {
     public Action evaluateAction(Board board, Entity currentRobot) {
         Action action = Action.dig(currentRobot.pos);
         Cell currentCell = board.getCell(currentRobot.pos);
-        if (currentRobot.item.equals(EntityType.NOTHING) && currentRobot.pos.x != 0 && !board.myUnsuccessfulHoles.contains(currentRobot.pos)) {
-            if (currentCell.ore > 0 && !board.myTrapPos.contains(currentRobot.pos)) {
+        if (currentRobot.item.equals(EntityType.NOTHING)
+                && currentRobot.pos.x != 0
+                && !board.myTrapPos.contains(currentRobot.pos)
+                && !board.myUnsuccessfulHoles.contains(currentRobot.pos)
+                && !currentCell.hole) {
+            if (currentCell.ore > 0) {
                 action.efficiencyRate = EfficiencyRate.MAXIMUM;
             } else {
-                if (!board.myTrapPos.contains(currentRobot.pos) && !currentCell.hole) {
+                if (!board.myTrapPos.contains(currentRobot.pos)) {
                     action.efficiencyRate = EfficiencyRate.AVERAGE;
                 } else {
                     if (!board.myTrapPos.contains(currentRobot.pos)) {
