@@ -1,6 +1,9 @@
 package support;
 
 import static java.lang.Math.*;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 public class Coord {
@@ -26,20 +29,13 @@ public class Coord {
         return abs(x - other.x) + abs(y - other.y);
     }
 
+
     public int hashCode() {
         final int PRIME = 31;
         int result = 1;
         result = PRIME * result + x;
         result = PRIME * result + y;
         return result;
-    }
-
-    public double computeDistanceFrom(Coord c) {
-        double distance=0;
-        int diffX = Math.abs(this.x-c.x);
-        int diffY = Math.abs(this.y-c.y);
-        distance = Math.sqrt(diffX*diffX + diffY*diffY);
-        return distance;
     }
 
     public boolean equals(Object obj) {

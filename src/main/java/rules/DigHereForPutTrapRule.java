@@ -15,12 +15,12 @@ public class DigHereForPutTrapRule implements IRule {
         } else {
             action.efficiencyRate = EfficiencyRate.USELESS;
         }
-        action.message = getMessage(currentRobot);
+        action.message = getMessage();
         return action;
     }
 
     @Override
-    public String getMessage(Entity currentRobot) {
+    public String getMessage() {
         return ("DHFPT");
     }
 }

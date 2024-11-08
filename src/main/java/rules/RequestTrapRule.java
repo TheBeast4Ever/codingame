@@ -20,12 +20,12 @@ public class RequestTrapRule implements IRule {
             }
         }
 
-        action.message = getMessage(currentRobot);
+        action.message = getMessage();
         return action;
     }
 
     @Override
-    public String getMessage(Entity currentRobot) {
+    public String getMessage() {
         return ("REQ T");
     }
 }

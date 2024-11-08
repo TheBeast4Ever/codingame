@@ -20,12 +20,12 @@ public class GoToBestPlaceToPutRadarRule implements IRule {
         }
         Action action = Action.move(coordToFollow);
         action.efficiencyRate = efficiencyRate;
-        action.message = getMessage(currentRobot);
+        action.message = getMessage();
         return action;
     }
 
     @Override
-    public String getMessage(Entity currentRobot) {
+    public String getMessage() {
         return "GBPR";
     }
 }

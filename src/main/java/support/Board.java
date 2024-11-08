@@ -79,6 +79,28 @@ public class Board {
         return cells[pos.y][pos.x];
     }
 
+    public List<Coord> getAllCoordsAccessibleFrom(Coord pos) {
+        final int MAX_DISTANCE = 4;
+        List<Coord> coords = new ArrayList<>();
+        int minX = Math.max((pos.x - MAX_DISTANCE), 0);
+        int minY = Math.max((pos.y - MAX_DISTANCE), 0);
+
+        int maxX = Math.min((pos.x + MAX_DISTANCE), width-1);
+        int maxY = Math.min((pos.y + MAX_DISTANCE), height-1);
+
+        for (int i=minX ; i<=maxX ; i++) {
+            for (int j=minY ; j<=maxY ; j++) {
+                Coord currentCoord = new Coord(i,j);
+                int distanceFromPos = pos.distance(currentCoord);
+                if (distanceFromPos<=MAX_DISTANCE) {
+                    coords.add(currentCoord);
+                }
+            }
+        }
+
+        return coords;
+    }
+
     public Coord getNearestIdealRadarPosition(Coord actualPosition) {
         Coord nearestPosition = actualPosition;
 

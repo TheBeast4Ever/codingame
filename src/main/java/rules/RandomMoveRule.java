@@ -6,22 +6,30 @@ import support.Board;
 import support.Coord;
 import support.Entity;
 
+import java.util.List;
 import java.util.Random;
 
 public class RandomMoveRule implements IRule {
 
     @Override
     public Action evaluateAction(Board board, Entity currentRobot) {
-        Random rand = new Random();
-        int maxX=board.width,maxY= board.height;
-        Action action = Action.move(new Coord(rand.nextInt(maxX+1)-1, rand.nextInt(maxY+1)-1));
+
+        int maxX=board.width-1,maxY= board.height-1;
+        List<Coord> coords = board.getAllCoordsAccessibleFrom(currentRobot.pos);
+        Action action = Action.move(pickRandomCoordFrom(coords));
         action.efficiencyRate=EfficiencyRate.WEAK;
-        action.message = getMessage(currentRobot);
+        action.message = getMessage();
         return action;
     }
 
+    private Coord pickRandomCoordFrom(List<Coord> coords) {
+        int nbOfPossibleMoves = coords.size();
+        Random rand = new Random();
+        return coords.get(rand.nextInt(0, nbOfPossibleMoves-1));
+    }
+
     @Override
-    public String getMessage(Entity currentRobot) {
+    public String getMessage() {
         return ("RM");
     }
 }

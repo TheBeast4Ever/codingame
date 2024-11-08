@@ -15,12 +15,12 @@ public class BackToHeadQuarterRule implements IRule {
 
         }
         action.efficiencyRate = efficiencyRateToCompute;
-        action.message = getMessage(currentRobot);
+        action.message = getMessage();
         return action;
     }
 
     @Override
-    public String getMessage(Entity currentRobot) {
+    public String getMessage() {
         return ("HQ");
     }
 
