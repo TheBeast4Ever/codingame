@@ -18,7 +18,7 @@ public class ActionDecider {
         // rules.add(new FollowOreAndDigRule());
         rules.add(new BackToHeadQuarterRule());
         rules.add(new DigForOreRule());
-        // rules.add(new DigHereForPutRadarRule());
+        rules.add(new DigHereForPutRadarRule());
         // rules.add(new DigHereForPutTrapRule());
         // rules.add(new RequestRadarRule());
         // rules.add(new SmartKamikazeRule());

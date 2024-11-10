@@ -122,4 +122,12 @@ public class Board {
 
         return nearestPosition;
     }
+
+    public Optional<Entity> whoIsMyAllyNearestFromThisCoord(Coord coord) {
+        return myTeam.robots.stream().sorted((Object r1, Object r2) ->
+                Integer.compare(coord.distance(((Entity) r1).pos), coord.distance(((Entity) r2).pos))).findFirst();
+    }
+
+
+
 }

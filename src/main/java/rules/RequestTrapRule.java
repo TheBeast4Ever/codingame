@@ -1,23 +1,21 @@
 package rules;
 
 import rules.IRule;
-import support.Action;
-import support.Board;
-import support.Entity;
-import support.EntityType;
+import support.*;
 
 public class RequestTrapRule implements IRule {
     @Override
     public Action evaluateAction(Board board, Entity currentRobot) {
         Action action = Action.request(EntityType.TRAP);
-        if (currentRobot.pos.x!=0) {
-            action.efficiencyRate=EfficiencyRate.USELESS;
-        } else {
-            if (board.myTrapCooldown==0 && currentRobot.item.equals(EntityType.NOTHING)) {
-                action.efficiencyRate=EfficiencyRate.MAXIMUM;
-            } else {
-                action.efficiencyRate=EfficiencyRate.USELESS;
+        if (board.myTrapCooldown==0
+                && currentRobot.item.equals(EntityType.NOTHING)
+                && board.whoIsMyAllyNearestFromThisCoord(new Coord(0,currentRobot.pos.y)).get().equals(currentRobot)) {
+            if (currentRobot.pos.x != 0) {
+                action = Action.move(new Coord(0,currentRobot.pos.y));
             }
+            action.efficiencyRate=EfficiencyRate.HIGH;
+        } else {
+            action.efficiencyRate=EfficiencyRate.USELESS;
         }
 
         action.message = getMessage();

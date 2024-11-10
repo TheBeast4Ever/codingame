@@ -1,2 +1,2 @@
-java -jar C:\Users\dbernier\.m2\repository\com\github\Tiramon\CGFileMerge\HEAD\CGFileMerge-HEAD.jar C:\Users\dbernier\IdeaProjects\codingame\src\main\java C:\Users\dbernier\IdeaProjects\codingame\output\Output.java
+java -jar C:\Users\david\.m2\repository\com\github\Tiramon\CGFileMerge\HEAD\CGFileMerge-HEAD.jar C:\Users\david\IdeaProjects\codingame\src\main\java C:\Users\david\IdeaProjects\codingame\output\Output.java
 Write-Host "Script terminé"
