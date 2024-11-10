@@ -7,9 +7,13 @@ public class RequestTrapRule implements IRule {
     @Override
     public Action evaluateAction(Board board, Entity currentRobot) {
         Action action = Action.request(EntityType.TRAP);
+        if (board.myTrapCooldown==0) {
+            System.err.println("near " + board.whoIsMyAllyNearestFromHeadQuarter().get().id);
+        }
+
         if (board.myTrapCooldown==0
                 && currentRobot.item.equals(EntityType.NOTHING)
-                && board.whoIsMyAllyNearestFromThisCoord(new Coord(0,currentRobot.pos.y)).get().equals(currentRobot)) {
+                && board.whoIsMyAllyNearestFromHeadQuarter().get().id == currentRobot.id) {
             if (currentRobot.pos.x != 0) {
                 action = Action.move(new Coord(0,currentRobot.pos.y));
             }

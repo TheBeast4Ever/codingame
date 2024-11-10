@@ -41,7 +41,7 @@ public class Player {
                 if (currentRobot.isAlive()) {
                     List<Action> possibleActions = decider.computeEligibleActionsRankedByEfficiency(board, currentRobot);
                     Optional<Action> bestActionToPerform = possibleActions.stream()
-                            .filter(a->!actionsToPlay.containsValue(a) || a.efficiencyRate== EfficiencyRate.MAXIMUM).findFirst();
+                            .filter(a-> !isActionAlreadyPlayed(a, actionsToPlay)).findFirst();
                     if (bestActionToPerform.isPresent()) {
                         myPreviousActionsByRobot.put(currentRobot.id, bestActionToPerform.get());
                         actionsToPlay.put(currentRobot.id, bestActionToPerform.get());
@@ -57,6 +57,18 @@ public class Player {
                     System.out.println(Action.none());
                 }
             }
+        }
+    }
+
+    public static Boolean isActionAlreadyPlayed(Action action, Map<Integer, Action> otherPendingActions) {
+        if (action.command.startsWith("REQUEST RADAR")) {
+            return otherPendingActions.values().stream().filter(a -> a.command.startsWith("REQUEST RADAR")).count() > 0;
+        } else if (action.command.startsWith("REQUEST TRAP")) {
+            return otherPendingActions.values().stream().filter(a -> a.command.startsWith("REQUEST TRAP")).count() > 0;
+        } else if (action.message.equals("HQ")) {
+            return false;
+        } else {
+            return otherPendingActions.containsValue(action);
         }
     }
 }

@@ -8,14 +8,10 @@ public class FollowOreFoundWithoutRadarRule implements IRule {
         Coord coordToFollow = new Coord(0,0);
         final EfficiencyRate[] efficiency = {EfficiencyRate.USELESS};
 
-        if (messageOreFoundPublished(board)) {
-            System.err.println("msg " + board.hub.consumeWithoutRemove().id);
-            System.err.println("near " + board.whoIsMyAllyNearestFromThisCoord(board.hub.consumeWithoutRemove().pos).get().id);
-        }
-
         if (messageOreFoundPublished(board)
                 && currentRobot.item.equals(EntityType.NOTHING)
-                && board.whoIsMyAllyNearestFromThisCoord(board.hub.consumeWithoutRemove().pos).get().equals(currentRobot)) {
+                && board.isThisPosIsSafe(board.hub.consumeWithoutRemove().pos)
+                && board.whoIsMyAllyNearestFromThisCoordWithoutItem(board.hub.consumeWithoutRemove().pos, EntityType.AMADEUSIUM).get().equals(currentRobot)) {
             System.err.println("msg consumed by " + currentRobot.id);
             Message message = board.hub.consumeAndRemove();
             coordToFollow = message.pos;
@@ -27,12 +23,11 @@ public class FollowOreFoundWithoutRadarRule implements IRule {
             efficiency[0] = EfficiencyRate.MAXIMUM;
         }
         Action action = Action.move(coordToFollow);
-        /*System.err.println("id=" + currentRobot.id);
-        System.err.println("coordToFollow=" + coordToFollow);
-        System.err.println("currentRobot.pos=" + currentRobot.pos);*/
-        if (coordToFollow.equals(currentRobot.pos)) {
+
+        if (coordToFollow.equals(currentRobot.pos)
+                && board.isThisPosIsSafe(currentRobot.pos)) {
             action = Action.dig(coordToFollow);
-            action.message = "DIG";
+            action.message = "DIG 2";
         } else {
             action.message = getMessage();
         }

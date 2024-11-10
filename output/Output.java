@@ -1,4 +1,4 @@
-//Version Sun Nov 10 11:13:41 CET 2024
+//Version Sun Nov 10 19:58:00 CET 2024
 import java.util.*;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -14,9 +14,13 @@ class RequestTrapRule implements IRule {
     @Override
     public Action evaluateAction(Board board, Entity currentRobot) {
         Action action = Action.request(EntityType.TRAP);
+        if (board.myTrapCooldown==0) {
+            System.err.println("near " + board.whoIsMyAllyNearestFromHeadQuarter().get().id);
+        }
+
         if (board.myTrapCooldown==0
                 && currentRobot.item.equals(EntityType.NOTHING)
-                && board.whoIsMyAllyNearestFromThisCoord(new Coord(0,currentRobot.pos.y)).get().equals(currentRobot)) {
+                && board.whoIsMyAllyNearestFromHeadQuarter().get().id == currentRobot.id) {
             if (currentRobot.pos.x != 0) {
                 action = Action.move(new Coord(0,currentRobot.pos.y));
             }
@@ -42,14 +46,10 @@ class FollowOreFoundWithoutRadarRule implements IRule {
         Coord coordToFollow = new Coord(0,0);
         final EfficiencyRate[] efficiency = {EfficiencyRate.USELESS};
 
-        if (messageOreFoundPublished(board)) {
-            System.err.println("msg " + board.hub.consumeWithoutRemove().id);
-            System.err.println("near " + board.whoIsMyAllyNearestFromThisCoord(board.hub.consumeWithoutRemove().pos).get().id);
-        }
-
         if (messageOreFoundPublished(board)
                 && currentRobot.item.equals(EntityType.NOTHING)
-                && board.whoIsMyAllyNearestFromThisCoord(board.hub.consumeWithoutRemove().pos).get().equals(currentRobot)) {
+                && board.isThisPosIsSafe(board.hub.consumeWithoutRemove().pos)
+                && board.whoIsMyAllyNearestFromThisCoordWithoutItem(board.hub.consumeWithoutRemove().pos, EntityType.AMADEUSIUM).get().equals(currentRobot)) {
             System.err.println("msg consumed by " + currentRobot.id);
             Message message = board.hub.consumeAndRemove();
             coordToFollow = message.pos;
@@ -61,12 +61,11 @@ class FollowOreFoundWithoutRadarRule implements IRule {
             efficiency[0] = EfficiencyRate.MAXIMUM;
         }
         Action action = Action.move(coordToFollow);
-        /*System.err.println("id=" + currentRobot.id);
-        System.err.println("coordToFollow=" + coordToFollow);
-        System.err.println("currentRobot.pos=" + currentRobot.pos);*/
-        if (coordToFollow.equals(currentRobot.pos)) {
+
+        if (coordToFollow.equals(currentRobot.pos)
+                && board.isThisPosIsSafe(currentRobot.pos)) {
             action = Action.dig(coordToFollow);
-            action.message = "DIG";
+            action.message = "DIG 2";
         } else {
             action.message = getMessage();
         }
@@ -173,6 +172,11 @@ class Board {
         return cells[pos.y][pos.x];
     }
 
+    public boolean isTargetAccessibleFromActualPosition(Coord target, Coord actualPos) {
+        List<Coord> coords = this.getAllCoordsAccessibleFrom(actualPos);
+        return coords.contains(target);
+    }
+
     public List<Coord> getAllCoordsAccessibleFrom(Coord pos) {
         final int MAX_DISTANCE = 4;
         List<Coord> coords = new ArrayList<>();
@@ -199,17 +203,15 @@ class Board {
         Coord nearestPosition = actualPosition;
 
         double bestDistance = Integer.MAX_VALUE;
-        for (int x=28; x > 0; x=x-5) {
-            for (int y=12; y >= 0; y=y-5) {
+        for (int x=2; x < width-1; x=x+5) {
+            for (int y=3; y < height-1; y=y+5) {
                 Coord currCord = new Coord(x,y);
                 if (!myTrapPos.contains(currCord) && !myRadarPos.contains(currCord)) {
                     double currentDistance = currCord.distance(actualPosition);
-                    /*if (currentDistance<bestDistance) {
+                    if (currentDistance<bestDistance) {
                         bestDistance = currentDistance;
                         nearestPosition = currCord;
-                    }*/
-                    nearestPosition = currCord;
-                    break;
+                    }
                 }
             }
         }
@@ -217,11 +219,84 @@ class Board {
         return nearestPosition;
     }
 
+    public Coord getNearestIdealTrapPosition(Coord actualPosition) {
+        Coord nearestPosition = actualPosition;
+
+        double bestDistance = Integer.MAX_VALUE;
+        for (int x=2; x < width-1; x=x+5) {
+            for (int y=3; y < height-1; y=y+5) {
+                Coord currCord = new Coord(x,y);
+                if (!myTrapPos.contains(currCord)) {
+                    double currentDistance = currCord.distance(actualPosition);
+                    if (currentDistance<bestDistance) {
+                        bestDistance = currentDistance;
+                        nearestPosition = currCord;
+                    }
+                }
+            }
+        }
+
+        return nearestPosition;
+    }
+
+    public Coord getFarthestIdealRadarPosition(Coord actualPosition) {
+        Coord farthestPosition = actualPosition;
+
+        double bestDistance = 0;
+        for (int x=28; x > 0; x=x-5) {
+            for (int y=12; y >= 0; y=y-5) {
+                Coord currCord = new Coord(x,y);
+                if (!myTrapPos.contains(currCord) && !myRadarPos.contains(currCord)) {
+                    double currentDistance = currCord.distance(actualPosition);
+                    if (currentDistance>bestDistance) {
+                        bestDistance = currentDistance;
+                        farthestPosition = currCord;
+                    }
+                }
+            }
+        }
+
+        return farthestPosition;
+    }
+
+    public boolean hasSafeVisibleOrePosition() {
+        return !this.myVisibleOrePos.isEmpty();
+    }
+
+    public Coord getNearestVisibleOrePosition(Coord actualPosition) {
+        Optional<Coord> nearestPosition = Optional.ofNullable(actualPosition);
+
+        nearestPosition = myVisibleOrePos.stream().sorted((Object c1, Object c2) ->
+                Integer.compare(actualPosition.distance(((Coord) c1)), actualPosition.distance(((Coord) c2)))).findFirst();
+
+        return nearestPosition.get();
+    }
+
     public Optional<Entity> whoIsMyAllyNearestFromThisCoord(Coord coord) {
         return myTeam.robots.stream().sorted((Object r1, Object r2) ->
                 Integer.compare(coord.distance(((Entity) r1).pos), coord.distance(((Entity) r2).pos))).findFirst();
     }
 
+    public Optional<Entity> whoIsMyAllyNearestFromHeadQuarter() {
+        return myTeam.robots.stream().sorted((Object r1, Object r2) ->
+                Integer.compare((new Coord(0, ((Entity) r1).pos.y)).distance(((Entity) r1).pos),
+                        (new Coord(0, ((Entity) r2).pos.y)).distance(((Entity) r2).pos))).findFirst();
+    }
+
+    public Optional<Entity> whoIsMyAllyNearestFromThisCoordWithoutItem(Coord coord, EntityType itemType) {
+        return myTeam.robots.stream().filter(r -> r.item == null || !r.item.equals(itemType)).sorted((Object r1, Object r2) ->
+                Integer.compare(coord.distance(((Entity) r1).pos), coord.distance(((Entity) r2).pos))).findFirst();
+    }
+
+
+    public boolean isThisPosIsSafe(Coord pos) {
+        Cell currentCell = this.getCell(pos);
+        if (myTrapPos.contains(pos)) {
+            return false;
+        } else {
+            return true;
+        }
+    }
 
 
 }
@@ -261,6 +336,7 @@ class Action implements Comparable<Action> {
     public final Coord pos;
     public final EntityType item;
     public String message;
+
 
     private Action(String command, Coord pos, EntityType item) {
         this.command = command;
@@ -344,6 +420,39 @@ class RandomMoveRule implements IRule {
     }
 }
 
+
+class FollowOreFoundWithRadarRule implements IRule {
+
+    @Override
+    public Action evaluateAction(Board board, Entity currentRobot) {
+        Coord coordToFollow = currentRobot.pos;
+        final EfficiencyRate[] efficiency = {EfficiencyRate.USELESS};
+
+        if (board.hasSafeVisibleOrePosition() && currentRobot.item.equals(EntityType.NOTHING)) {
+            coordToFollow = board.getNearestVisibleOrePosition(currentRobot.pos);
+            efficiency[0] = EfficiencyRate.MAXIMUM;
+        }
+        Action action = Action.move(coordToFollow);
+
+        if (board.isTargetAccessibleFromActualPosition(coordToFollow, currentRobot.pos)
+                && board.isThisPosIsSafe(currentRobot.pos)) {
+            action = Action.dig(coordToFollow);
+            action.message = "DIG 1";
+        } else {
+            action.message = getMessage();
+        }
+        action.efficiencyRate = efficiency[0];
+
+
+        return action;
+    }
+
+    @Override
+    public String getMessage() {
+        return ("FOF 1");
+    }
+}
+
 enum EfficiencyRate {
     USELESS(0), WEAK(10), AVERAGE(50), HIGH(90), MAXIMUM(100);
     private final Integer efficiency;
@@ -364,19 +473,20 @@ class ActionDecider {
     
     public ActionDecider() {
         // Add rules here
-        rules.add(new RandomMoveRule());
-        // rules.add(new RandomMoveFor100FirstRoundsRule());
         rules.add(new KeepPreviousActionRule());
+        rules.add(new RandomMoveRule());
         rules.add(new FollowOreFoundWithoutRadarRule());
+        rules.add(new FollowOreFoundWithRadarRule());
+        rules.add(new RequestRadarRule());
+        rules.add(new DigForRadarRule());
+        rules.add(new RequestTrapRule());
+        rules.add(new DigForTrapRule());
         // rules.add(new FollowOreAndDigRule());
         rules.add(new BackToHeadQuarterRule());
-        rules.add(new DigForOreRule());
-        rules.add(new DigHereForPutRadarRule());
+
         // rules.add(new DigHereForPutTrapRule());
-        // rules.add(new RequestRadarRule());
-        // rules.add(new SmartKamikazeRule());
-        // rules.add(new GoToBestPlaceToPutRadarRule());
-        // rules.add(new RequestTrapRule());
+
+
     }
 
     public List<Action> computeEligibleActionsRankedByEfficiency(Board board, Entity allyRobot) {
@@ -425,13 +535,17 @@ class RequestRadarRule implements IRule {
     public Action evaluateAction(Board board, Entity currentRobot) {
         Action action = Action.request(EntityType.RADAR);
 
+        if (board.myRadarCooldown==0) {
+            System.err.println("near " + board.whoIsMyAllyNearestFromHeadQuarter().get().id);
+        }
+
         if (board.myRadarCooldown==0
                 && currentRobot.item.equals(EntityType.NOTHING)
-                && board.whoIsMyAllyNearestFromThisCoord(new Coord(0,currentRobot.pos.y)).get().equals(currentRobot)) {
-                if (currentRobot.pos.x != 0) {
-                    action = Action.move(new Coord(0,currentRobot.pos.y));
-                }
-                action.efficiencyRate=EfficiencyRate.HIGH;
+                && board.whoIsMyAllyNearestFromHeadQuarter().get().id == currentRobot.id) {
+            if (currentRobot.pos.x != 0) {
+                action = Action.move(new Coord(0,currentRobot.pos.y));
+            }
+            action.efficiencyRate=EfficiencyRate.HIGH;
         } else {
             action.efficiencyRate=EfficiencyRate.USELESS;
         }
@@ -443,6 +557,182 @@ class RequestRadarRule implements IRule {
     @Override
     public String getMessage() {
         return ("REQ R");
+    }
+}
+
+
+class Entity {
+    private static final Coord DEAD_POS = new Coord(-1, -1);
+
+    // Updated every turn
+    public final int id;
+    public final EntityType type;
+    public final Coord pos;
+    public final EntityType item;
+
+    // Computed for my robots
+    public Action previousAction;
+
+    public Entity(Scanner in) {
+        id = in.nextInt();
+        type = EntityType.valueOf(in.nextInt());
+        pos = new Coord(in);
+        item = EntityType.valueOf(in.nextInt());
+    }
+
+    public boolean isAlive() {
+        return !DEAD_POS.equals(pos);
+    }
+}
+
+
+class DigForTrapRule implements IRule {
+    @Override
+    public Action evaluateAction(Board board, Entity currentRobot) {
+        Action action = Action.none();
+        if (currentRobot.item.equals(EntityType.TRAP)) {
+            Coord idealPos = board.getNearestIdealTrapPosition(currentRobot.pos);
+            if (currentRobot.previousAction != null
+                    && currentRobot.previousAction.message.equals(getMessage())) {
+                idealPos = currentRobot.previousAction.pos;
+            }
+
+            if (!board.isTargetAccessibleFromActualPosition(idealPos, currentRobot.pos)) {
+                action = Action.move(idealPos);
+            } else {
+                action = Action.dig(idealPos);
+            }
+            action.efficiencyRate = EfficiencyRate.HIGH;
+        } else {
+            action.efficiencyRate = EfficiencyRate.USELESS;
+        }
+        action.message = getMessage();
+        return action;
+    }
+
+    @Override
+    public String getMessage() {
+        return ("DIG T");
+    }
+}
+
+
+class MessagesHub {
+    private Map<Integer, List<Message>> oldMessages;
+
+    private Queue<Message> messages;
+
+    public MessagesHub() {
+        messages = new ArrayDeque<Message>();
+        oldMessages = new HashMap<Integer, List<Message>>();
+    }
+
+    public void pub(Message message) {
+        messages.add(message);
+        System.err.println("New message : " + message);
+    }
+
+    public Message consumeWithoutRemove() {
+        return messages.peek();
+    }
+    public Message consumeAndRemove() {
+        return messages.poll();
+    }
+
+    public void oldPub(Message message) {
+        List<Message> messageForSamePriority = oldMessages.containsKey(message.priority)? oldMessages.get(message.priority):new ArrayList<Message>();
+        messageForSamePriority.add(message);
+        oldMessages.put(message.priority, messageForSamePriority);
+        System.err.println("New message : " + message);
+    }
+
+}
+
+
+class DigForRadarRule implements IRule {
+
+    @Override
+    public Action evaluateAction(Board board, Entity currentRobot) {
+        Action action = Action.none();
+        if (currentRobot.item.equals(EntityType.RADAR)) {
+            Coord idealPos = board.getNearestIdealRadarPosition(currentRobot.pos);
+            if (currentRobot.previousAction != null
+                    && currentRobot.previousAction.message.equals(getMessage())) {
+                idealPos = currentRobot.previousAction.pos;
+            }
+
+            if (!board.isTargetAccessibleFromActualPosition(idealPos, currentRobot.pos)) {
+                action = Action.move(idealPos);
+            } else {
+                action = Action.dig(idealPos);
+            }
+            action.efficiencyRate = EfficiencyRate.HIGH;
+        } else {
+            action.efficiencyRate = EfficiencyRate.USELESS;
+        }
+        action.message = getMessage();
+        return action;
+    }
+
+    @Override
+    public String getMessage() {
+        return ("DIG R");
+    }
+}
+
+
+class Team {
+    public int score;
+    public Collection<Entity> robots;
+
+    void readScore(Scanner in) {
+        score = in.nextInt();
+        robots = new ArrayList<Entity>();
+    }
+}
+
+
+
+class SmartKamikazeRule implements IRule {
+    @Override
+    public Action evaluateAction(Board board, Entity currentRobot) {
+        Action action = Action.none();
+        if (currentRobot.id == 0 && board.roundNumber<83) {
+            if (currentRobot.pos.x==0 && board.myTrapCooldown==0 && currentRobot.item.equals(EntityType.NOTHING) && !board.myPossibleTrapPositions.isEmpty()) {
+                action = Action.request(EntityType.TRAP);
+            } else if (currentRobot.item.equals(EntityType.TRAP) && !board.myPossibleTrapPositions.isEmpty()) {
+                final Coord[] bestCoordToFollow = {new Coord(0, currentRobot.pos.y)};
+                final double[] bestDistance = {Integer.MAX_VALUE};
+
+                board.myPossibleTrapPositions.stream().forEach(currCord -> {
+                    double currentDistance = currCord.distance(currentRobot.pos);
+                    if (currentDistance< bestDistance[0]) {
+                        bestDistance[0] = currentDistance;
+                        bestCoordToFollow[0] = currCord;
+                    }
+                });
+                action = Action.dig(bestCoordToFollow[0]);
+            } else if (board.myTrapCooldown==0 && !board.myPossibleTrapPositions.isEmpty()) {
+                action = Action.move(new Coord(0,currentRobot.pos.y));
+            } else if (board.myPossibleTrapPositions.isEmpty()){
+                // mode veille
+                action = Action.move(new Coord(3,currentRobot.pos.y));
+            } else {
+                // mode veille
+                action = Action.none();
+            }
+            action.efficiencyRate=EfficiencyRate.MAXIMUM;
+        } else {
+            action.efficiencyRate=EfficiencyRate.USELESS;
+        }
+
+        action.message = getMessage();
+        return action;
+    }
+
+    @Override
+    public String getMessage() {
+        return ("SK");
     }
 }
 
@@ -485,7 +775,7 @@ class Player {
                 if (currentRobot.isAlive()) {
                     List<Action> possibleActions = decider.computeEligibleActionsRankedByEfficiency(board, currentRobot);
                     Optional<Action> bestActionToPerform = possibleActions.stream()
-                            .filter(a->!actionsToPlay.containsValue(a) || a.efficiencyRate== EfficiencyRate.MAXIMUM).findFirst();
+                            .filter(a-> !isActionAlreadyPlayed(a, actionsToPlay)).findFirst();
                     if (bestActionToPerform.isPresent()) {
                         myPreviousActionsByRobot.put(currentRobot.id, bestActionToPerform.get());
                         actionsToPlay.put(currentRobot.id, bestActionToPerform.get());
@@ -502,6 +792,38 @@ class Player {
                 }
             }
         }
+    }
+
+    public static Boolean isActionAlreadyPlayed(Action action, Map<Integer, Action> otherPendingActions) {
+        if (action.command.startsWith("REQUEST RADAR")) {
+            return otherPendingActions.values().stream().filter(a -> a.command.startsWith("REQUEST RADAR")).count() > 0;
+        } else if (action.command.startsWith("REQUEST TRAP")) {
+            return otherPendingActions.values().stream().filter(a -> a.command.startsWith("REQUEST TRAP")).count() > 0;
+        } else if (action.message.equals("HQ")) {
+            return false;
+        } else {
+            return otherPendingActions.containsValue(action);
+        }
+    }
+}
+
+
+class KeepPreviousActionRule implements IRule {
+    @Override
+    public Action evaluateAction(Board board, Entity currentRobot) {
+        Action action = currentRobot.previousAction;
+        if (action != null && action.message.equals("FOF2")) {
+            return action;
+        } else {
+            action = Action.none();
+            action.efficiencyRate=EfficiencyRate.USELESS;
+            return action;
+        }
+    }
+
+    @Override
+    public String getMessage() {
+        return ("KPA");
     }
 }
 
@@ -552,328 +874,6 @@ class Coord {
 
     public String toString() {
         return x + " " + y;
-    }
-}
-
-
-interface IRule {
-
-    Action evaluateAction(Board board, Entity currentRobot);
-
-    String getMessage();
-}
-
-
-class DigHereForPutTrapRule implements IRule {
-    @Override
-    public Action evaluateAction(Board board, Entity currentRobot) {
-        Action action = Action.dig(currentRobot.pos);
-        Cell currentCell = board.getCell(currentRobot.pos);
-        if (currentRobot.pos.x!=0 && currentRobot.item.equals(EntityType.TRAP) && currentCell.known && !board.myTrapPos.contains(currentRobot.pos)) {
-            action.efficiencyRate = EfficiencyRate.HIGH;
-        } else if (currentRobot.pos.x!=0 && currentRobot.item.equals(EntityType.TRAP) && !board.myTrapPos.contains(currentRobot.pos)) {
-            action.efficiencyRate = EfficiencyRate.AVERAGE;
-        } else {
-            action.efficiencyRate = EfficiencyRate.USELESS;
-        }
-        action.message = getMessage();
-        return action;
-    }
-
-    @Override
-    public String getMessage() {
-        return ("DHFPT");
-    }
-}
-
-
-class DigForOreRule implements IRule {
-
-    @Override
-    public Action evaluateAction(Board board, Entity currentRobot) {
-        Action action = Action.dig(currentRobot.pos);
-        Cell currentCell = board.getCell(currentRobot.pos);
-        if (currentRobot.item.equals(EntityType.NOTHING)
-                && currentRobot.pos.x != 0
-                && !board.myTrapPos.contains(currentRobot.pos)
-                && !board.myUnsuccessfulHoles.contains(currentRobot.pos)
-                && !currentCell.hole) {
-            if (currentCell.ore > 0) {
-                action.efficiencyRate = EfficiencyRate.MAXIMUM;
-            } else {
-                if (!board.myTrapPos.contains(currentRobot.pos)) {
-                    action.efficiencyRate = EfficiencyRate.AVERAGE;
-                } else {
-                    if (!board.myTrapPos.contains(currentRobot.pos)) {
-                        action.efficiencyRate = EfficiencyRate.WEAK;
-                    } else {
-                        action.efficiencyRate = EfficiencyRate.USELESS;
-                    }
-                }
-            }
-        } else {
-            action.efficiencyRate = EfficiencyRate.USELESS;
-        }
-        action.message = getMessage();
-        return action;
-    }
-
-    @Override
-    public String getMessage() {
-        return ("DIG");
-    }
-}
-
-
-class DigHereForPutRadarRule implements IRule {
-
-    @Override
-    public Action evaluateAction(Board board, Entity currentRobot) {
-        Action action = Action.dig(currentRobot.pos);
-        Cell currentCell = board.getCell(currentRobot.pos);
-        if (currentRobot.pos.x>0 && currentRobot.item.equals(EntityType.RADAR)  && !currentCell.hole  && !currentCell.known && !board.myTrapPos.contains(currentRobot.pos)) {
-            action.efficiencyRate = EfficiencyRate.HIGH;
-        } else {
-            action.efficiencyRate = EfficiencyRate.USELESS;
-        }
-        action.message = getMessage();
-        return action;
-    }
-
-    @Override
-    public String getMessage() {
-        return ("DHFPR");
-    }
-}
-
-
-class Entity {
-    private static final Coord DEAD_POS = new Coord(-1, -1);
-
-    // Updated every turn
-    public final int id;
-    public final EntityType type;
-    public final Coord pos;
-    public final EntityType item;
-
-    // Computed for my robots
-    public Action previousAction;
-
-    public Entity(Scanner in) {
-        id = in.nextInt();
-        type = EntityType.valueOf(in.nextInt());
-        pos = new Coord(in);
-        item = EntityType.valueOf(in.nextInt());
-    }
-
-    public boolean isAlive() {
-        return !DEAD_POS.equals(pos);
-    }
-}
-
-
-class MessagesHub {
-    private Map<Integer, List<Message>> oldMessages;
-
-    private Queue<Message> messages;
-
-    public MessagesHub() {
-        messages = new ArrayDeque<Message>();
-        oldMessages = new HashMap<Integer, List<Message>>();
-    }
-
-    public void pub(Message message) {
-        messages.add(message);
-        System.err.println("New message : " + message);
-    }
-
-    public Message consumeWithoutRemove() {
-        return messages.peek();
-    }
-    public Message consumeAndRemove() {
-        return messages.poll();
-    }
-
-    public void oldPub(Message message) {
-        List<Message> messageForSamePriority = oldMessages.containsKey(message.priority)? oldMessages.get(message.priority):new ArrayList<Message>();
-        messageForSamePriority.add(message);
-        oldMessages.put(message.priority, messageForSamePriority);
-        System.err.println("New message : " + message);
-    }
-
-}
-
-
-class Team {
-    public int score;
-    public Collection<Entity> robots;
-
-    void readScore(Scanner in) {
-        score = in.nextInt();
-        robots = new ArrayList<Entity>();
-    }
-}
-
-
-class FollowOreAndDigRule implements IRule {
-
-    private boolean invisibleOreHasBeenFound(Board board) {
-        Message message = board.hub.consumeWithoutRemove();
-        if (message != null) {
-            if (message.header.equals("ORE-FOUND")) {
-                return true;
-            } else {
-                return false;
-            }
-        } else {
-            return false;
-        }
-    }
-
-
-    public Action evaluateAction(Board board, Entity currentRobot) {
-        Coord coordToFollow = new Coord(0,0);
-        final EfficiencyRate[] efficiency = {EfficiencyRate.USELESS};
-        if (!board.myVisibleOrePos.isEmpty() && currentRobot.item.equals(EntityType.NOTHING)) {
-            final Coord[] bestCoordToFollow = {new Coord(0, 0)};
-            final double[] bestDistance = {Integer.MAX_VALUE};
-            board.myVisibleOrePos.stream().filter(pos-> !board.myTrapPos.contains(pos)).forEach(currCord -> {
-                double currentDistance = currCord.distance(currentRobot.pos);
-                if (currentDistance< bestDistance[0]) {
-                    bestDistance[0] = currentDistance;
-                    bestCoordToFollow[0] = currCord;
-                    if (currCord.equals(currentRobot.pos)) {
-                        efficiency[0] = EfficiencyRate.USELESS;
-                    } else {
-                        efficiency[0] = EfficiencyRate.HIGH;
-                    }
-
-                }
-            });
-            coordToFollow=bestCoordToFollow[0];
-            System.err.println("best to follow : " + coordToFollow);
-        } else if (invisibleOreHasBeenFound(board) && currentRobot.item.equals(EntityType.NOTHING)
-                && (currentRobot.previousAction == null || !currentRobot.previousAction.message.equals(getMessage()))) {
-            System.err.println("msg received by " + currentRobot.id);
-            Message message = board.hub.consumeAndRemove();
-            coordToFollow = message.pos;
-            efficiency[0] = EfficiencyRate.MAXIMUM;
-        }
-        Action action = Action.move(coordToFollow);
-        if (coordToFollow.equals(currentRobot.pos)) {
-            action = Action.dig(coordToFollow);
-        }
-        action.efficiencyRate = efficiency[0];
-        action.message = getMessage();
-        return action;
-    }
-
-
-    private Action evaluateActionOLD(Board board, Entity currentRobot) {
-        Coord coordToFollow = new Coord(0,0);
-        final EfficiencyRate[] efficiency = {EfficiencyRate.USELESS};
-        if (!board.myVisibleOrePos.isEmpty() && currentRobot.item.equals(EntityType.NOTHING)) {
-            final Coord[] bestCoordToFollow = {new Coord(0, 0)};
-            final double[] bestDistance = {Integer.MAX_VALUE};
-            board.myVisibleOrePos.stream().filter(pos-> !board.myTrapPos.contains(pos)).forEach(currCord -> {
-                double currentDistance = currCord.distance(currentRobot.pos);
-                if (currentDistance< bestDistance[0]) {
-                    bestDistance[0] = currentDistance;
-                    bestCoordToFollow[0] = currCord;
-                    if (currCord.equals(currentRobot.pos)) {
-                        efficiency[0] = EfficiencyRate.USELESS;
-                    } else {
-                        efficiency[0] = EfficiencyRate.HIGH;
-                    }
-
-                }
-            });
-            coordToFollow=bestCoordToFollow[0];
-            System.err.println("best to follow : " + coordToFollow);
-        } else if (invisibleOreHasBeenFound(board) && currentRobot.item.equals(EntityType.NOTHING)
-        && (currentRobot.previousAction == null || !currentRobot.previousAction.command.equals(getMessage()))) {
-            System.err.println("msg received by " + currentRobot.id);
-            Message message = board.hub.consumeAndRemove();
-            coordToFollow = message.pos;
-            efficiency[0] = EfficiencyRate.MAXIMUM;
-        }
-        Action action = Action.move(coordToFollow);
-        if (coordToFollow.equals(currentRobot.pos)) {
-            action = Action.dig(coordToFollow);
-        }
-        action.efficiencyRate = efficiency[0];
-        action.message = getMessage();
-        return action;
-    }
-
-    @Override
-    public String getMessage() {
-        return ("FOAD");
-    }
-}
-
-
-
-class SmartKamikazeRule implements IRule {
-    @Override
-    public Action evaluateAction(Board board, Entity currentRobot) {
-        Action action = Action.none();
-        if (currentRobot.id == 0 && board.roundNumber<83) {
-            if (currentRobot.pos.x==0 && board.myTrapCooldown==0 && currentRobot.item.equals(EntityType.NOTHING) && !board.myPossibleTrapPositions.isEmpty()) {
-                action = Action.request(EntityType.TRAP);
-            } else if (currentRobot.item.equals(EntityType.TRAP) && !board.myPossibleTrapPositions.isEmpty()) {
-                final Coord[] bestCoordToFollow = {new Coord(0, currentRobot.pos.y)};
-                final double[] bestDistance = {Integer.MAX_VALUE};
-
-                board.myPossibleTrapPositions.stream().forEach(currCord -> {
-                    double currentDistance = currCord.distance(currentRobot.pos);
-                    if (currentDistance< bestDistance[0]) {
-                        bestDistance[0] = currentDistance;
-                        bestCoordToFollow[0] = currCord;
-                    }
-                });
-                action = Action.dig(bestCoordToFollow[0]);
-            } else if (board.myTrapCooldown==0 && !board.myPossibleTrapPositions.isEmpty()) {
-                action = Action.move(new Coord(0,currentRobot.pos.y));
-            } else if (board.myPossibleTrapPositions.isEmpty()){
-                // mode veille
-                action = Action.move(new Coord(3,currentRobot.pos.y));
-            } else {
-                // mode veille
-                action = Action.none();
-            }
-            action.efficiencyRate=EfficiencyRate.MAXIMUM;
-        } else {
-            action.efficiencyRate=EfficiencyRate.USELESS;
-        }
-
-        action.message = getMessage();
-        return action;
-    }
-
-    @Override
-    public String getMessage() {
-        return ("SK");
-    }
-}
-
-
-class KeepPreviousActionRule implements IRule {
-    @Override
-    public Action evaluateAction(Board board, Entity currentRobot) {
-        Action action = currentRobot.previousAction;
-        if (action != null && action.message.equals("FOF2")) {
-            return action;
-        } else {
-            action = Action.none();
-            action.efficiencyRate=EfficiencyRate.USELESS;
-            return action;
-        }
-    }
-
-    @Override
-    public String getMessage() {
-        return ("KPA");
     }
 }
 
@@ -939,7 +939,7 @@ class GoToBestPlaceToPutRadarRule implements IRule {
         EfficiencyRate efficiencyRate = EfficiencyRate.USELESS;
         if (currentRobot.item.equals(EntityType.RADAR)) {
             efficiencyRate=EfficiencyRate.HIGH;
-            Coord bestCoordToFollow = board.getNearestIdealRadarPosition(currentRobot.pos);
+            Coord bestCoordToFollow = board.getFarthestIdealRadarPosition(currentRobot.pos);
 
             if (bestCoordToFollow.equals(new Coord(currentRobot.pos.x, currentRobot.pos.y))){
                 efficiencyRate=EfficiencyRate.USELESS;
@@ -958,4 +958,12 @@ class GoToBestPlaceToPutRadarRule implements IRule {
     public String getMessage() {
         return "GBPR";
     }
+}
+
+
+interface IRule {
+
+    Action evaluateAction(Board board, Entity currentRobot);
+
+    String getMessage();
 }

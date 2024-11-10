@@ -79,6 +79,11 @@ public class Board {
         return cells[pos.y][pos.x];
     }
 
+    public boolean isTargetAccessibleFromActualPosition(Coord target, Coord actualPos) {
+        List<Coord> coords = this.getAllCoordsAccessibleFrom(actualPos);
+        return coords.contains(target);
+    }
+
     public List<Coord> getAllCoordsAccessibleFrom(Coord pos) {
         final int MAX_DISTANCE = 4;
         List<Coord> coords = new ArrayList<>();
@@ -105,17 +110,15 @@ public class Board {
         Coord nearestPosition = actualPosition;
 
         double bestDistance = Integer.MAX_VALUE;
-        for (int x=28; x > 0; x=x-5) {
-            for (int y=12; y >= 0; y=y-5) {
+        for (int x=2; x < width-1; x=x+5) {
+            for (int y=3; y < height-1; y=y+5) {
                 Coord currCord = new Coord(x,y);
                 if (!myTrapPos.contains(currCord) && !myRadarPos.contains(currCord)) {
                     double currentDistance = currCord.distance(actualPosition);
-                    /*if (currentDistance<bestDistance) {
+                    if (currentDistance<bestDistance) {
                         bestDistance = currentDistance;
                         nearestPosition = currCord;
-                    }*/
-                    nearestPosition = currCord;
-                    break;
+                    }
                 }
             }
         }
@@ -123,11 +126,84 @@ public class Board {
         return nearestPosition;
     }
 
+    public Coord getNearestIdealTrapPosition(Coord actualPosition) {
+        Coord nearestPosition = actualPosition;
+
+        double bestDistance = Integer.MAX_VALUE;
+        for (int x=2; x < width-1; x=x+5) {
+            for (int y=3; y < height-1; y=y+5) {
+                Coord currCord = new Coord(x,y);
+                if (!myTrapPos.contains(currCord)) {
+                    double currentDistance = currCord.distance(actualPosition);
+                    if (currentDistance<bestDistance) {
+                        bestDistance = currentDistance;
+                        nearestPosition = currCord;
+                    }
+                }
+            }
+        }
+
+        return nearestPosition;
+    }
+
+    public Coord getFarthestIdealRadarPosition(Coord actualPosition) {
+        Coord farthestPosition = actualPosition;
+
+        double bestDistance = 0;
+        for (int x=28; x > 0; x=x-5) {
+            for (int y=12; y >= 0; y=y-5) {
+                Coord currCord = new Coord(x,y);
+                if (!myTrapPos.contains(currCord) && !myRadarPos.contains(currCord)) {
+                    double currentDistance = currCord.distance(actualPosition);
+                    if (currentDistance>bestDistance) {
+                        bestDistance = currentDistance;
+                        farthestPosition = currCord;
+                    }
+                }
+            }
+        }
+
+        return farthestPosition;
+    }
+
+    public boolean hasSafeVisibleOrePosition() {
+        return !this.myVisibleOrePos.isEmpty();
+    }
+
+    public Coord getNearestVisibleOrePosition(Coord actualPosition) {
+        Optional<Coord> nearestPosition = Optional.ofNullable(actualPosition);
+
+        nearestPosition = myVisibleOrePos.stream().sorted((Object c1, Object c2) ->
+                Integer.compare(actualPosition.distance(((Coord) c1)), actualPosition.distance(((Coord) c2)))).findFirst();
+
+        return nearestPosition.get();
+    }
+
     public Optional<Entity> whoIsMyAllyNearestFromThisCoord(Coord coord) {
         return myTeam.robots.stream().sorted((Object r1, Object r2) ->
                 Integer.compare(coord.distance(((Entity) r1).pos), coord.distance(((Entity) r2).pos))).findFirst();
     }
 
+    public Optional<Entity> whoIsMyAllyNearestFromHeadQuarter() {
+        return myTeam.robots.stream().sorted((Object r1, Object r2) ->
+                Integer.compare((new Coord(0, ((Entity) r1).pos.y)).distance(((Entity) r1).pos),
+                        (new Coord(0, ((Entity) r2).pos.y)).distance(((Entity) r2).pos))).findFirst();
+    }
+
+    public Optional<Entity> whoIsMyAllyNearestFromThisCoordWithoutItem(Coord coord, EntityType itemType) {
+        return myTeam.robots.stream().filter(r -> r.item == null || !r.item.equals(itemType)).sorted((Object r1, Object r2) ->
+                Integer.compare(coord.distance(((Entity) r1).pos), coord.distance(((Entity) r2).pos))).findFirst();
+    }
+
+
+    public boolean isThisPosIsSafe(Coord pos) {
+        Cell currentCell = this.getCell(pos);
+        if (myTrapPos.contains(pos)) {
+            return false;
+        } else {
+            return true;
+        }
+    }
 
 
 }

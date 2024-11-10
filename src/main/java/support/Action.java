@@ -13,6 +13,7 @@ public class Action implements Comparable<Action> {
     public final EntityType item;
     public String message;
 
+
     private Action(String command, Coord pos, EntityType item) {
         this.command = command;
         this.pos = pos;

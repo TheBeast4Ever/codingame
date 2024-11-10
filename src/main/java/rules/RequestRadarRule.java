@@ -8,13 +8,17 @@ public class RequestRadarRule implements IRule {
     public Action evaluateAction(Board board, Entity currentRobot) {
         Action action = Action.request(EntityType.RADAR);
 
+        if (board.myRadarCooldown==0) {
+            System.err.println("near " + board.whoIsMyAllyNearestFromHeadQuarter().get().id);
+        }
+
         if (board.myRadarCooldown==0
                 && currentRobot.item.equals(EntityType.NOTHING)
-                && board.whoIsMyAllyNearestFromThisCoord(new Coord(0,currentRobot.pos.y)).get().equals(currentRobot)) {
-                if (currentRobot.pos.x != 0) {
-                    action = Action.move(new Coord(0,currentRobot.pos.y));
-                }
-                action.efficiencyRate=EfficiencyRate.HIGH;
+                && board.whoIsMyAllyNearestFromHeadQuarter().get().id == currentRobot.id) {
+            if (currentRobot.pos.x != 0) {
+                action = Action.move(new Coord(0,currentRobot.pos.y));
+            }
+            action.efficiencyRate=EfficiencyRate.HIGH;
         } else {
             action.efficiencyRate=EfficiencyRate.USELESS;
         }
