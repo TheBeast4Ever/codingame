@@ -19,7 +19,11 @@ public class DigForRadarRule implements IRule {
             } else {
                 action = Action.dig(idealPos);
             }
-            action.efficiencyRate = EfficiencyRate.HIGH;
+            if (board.isThisPosIsSafe(idealPos)) {
+                action.efficiencyRate = EfficiencyRate.HIGH;
+            } else {
+                action.efficiencyRate = EfficiencyRate.USELESS;
+            }
         } else {
             action.efficiencyRate = EfficiencyRate.USELESS;
         }

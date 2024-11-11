@@ -17,6 +17,8 @@ public class Board {
     public Collection<Coord> myRadarPos;
     public Collection<Coord> myTrapPos;
 
+    public Collection<Coord> myObviousOpponentRadarPos = new ArrayList<Coord>();
+
     public Collection<Coord> myPossibleTrapPositions;
 
     public Collection<Coord> myVisibleOrePos;
@@ -32,6 +34,23 @@ public class Board {
         height = in.nextInt();
         roundNumber=0;
         hub = new MessagesHub();
+    }
+
+    private void initAndUpdateMyObviousOpponentRadarPos() {
+        for (int x=1; x < width-1; x=x+7) {
+            for (int y=0; y < height-1; y=y+7) {
+                Coord currCord = new Coord(x,y);
+                if (!this.getCell(currCord).hole) {
+                    if (!myObviousOpponentRadarPos.contains(currCord)) {
+                        myObviousOpponentRadarPos.add(currCord);
+                    }
+                } else {
+                    if (myObviousOpponentRadarPos.contains(currCord)) {
+                        myObviousOpponentRadarPos.remove(currCord);
+                    }
+                }
+            }
+        }
     }
 
     public void update(Scanner in) {
@@ -68,6 +87,7 @@ public class Board {
                 myTrapPos.add(entity.pos);
             }
         }
+        initAndUpdateMyObviousOpponentRadarPos();
     }
 
 
@@ -108,6 +128,9 @@ public class Board {
 
     public Coord getNearestIdealRadarPosition(Coord actualPosition) {
         Coord nearestPosition = actualPosition;
+        if (nearestPosition.x==0) {
+            nearestPosition = new Coord(nearestPosition.x+1, nearestPosition.y);
+        }
 
         double bestDistance = Integer.MAX_VALUE;
         for (int x=2; x < width-1; x=x+5) {
@@ -126,8 +149,32 @@ public class Board {
         return nearestPosition;
     }
 
+    public Coord getNearestObviousOpponentRadarPosition(Coord actualPosition) {
+        Coord nearestPosition = null;
+
+        double bestDistance = Integer.MAX_VALUE;
+        for (int x=1; x < width-1; x=x+7) {
+            for (int y=0; y < height-1; y=y+7) {
+                Coord currCord = new Coord(x,y);
+                if (myObviousOpponentRadarPos.contains(currCord)) {
+                    double currentDistance = currCord.distance(actualPosition);
+                    if (currentDistance<bestDistance) {
+                        bestDistance = currentDistance;
+                        nearestPosition = currCord;
+                    }
+                }
+            }
+        }
+
+        return nearestPosition;
+    }
+
     public Coord getNearestIdealTrapPosition(Coord actualPosition) {
         Coord nearestPosition = actualPosition;
+
+        if (nearestPosition.x==0) {
+            nearestPosition = new Coord(nearestPosition.x+1, nearestPosition.y);
+        }
 
         double bestDistance = Integer.MAX_VALUE;
         for (int x=2; x < width-1; x=x+5) {
@@ -180,18 +227,20 @@ public class Board {
     }
 
     public Optional<Entity> whoIsMyAllyNearestFromThisCoord(Coord coord) {
-        return myTeam.robots.stream().sorted((Object r1, Object r2) ->
+        return myTeam.robots.stream().filter(r->r.isAlive()).sorted((Object r1, Object r2) ->
                 Integer.compare(coord.distance(((Entity) r1).pos), coord.distance(((Entity) r2).pos))).findFirst();
     }
 
     public Optional<Entity> whoIsMyAllyNearestFromHeadQuarter() {
-        return myTeam.robots.stream().sorted((Object r1, Object r2) ->
+        return myTeam.robots.stream()
+                .filter(r->r.isAlive() && (r.item.equals(EntityType.NOTHING) || r.item.equals(EntityType.AMADEUSIUM)))
+                .sorted((Object r1, Object r2) ->
                 Integer.compare((new Coord(0, ((Entity) r1).pos.y)).distance(((Entity) r1).pos),
                         (new Coord(0, ((Entity) r2).pos.y)).distance(((Entity) r2).pos))).findFirst();
     }
 
     public Optional<Entity> whoIsMyAllyNearestFromThisCoordWithoutItem(Coord coord, EntityType itemType) {
-        return myTeam.robots.stream().filter(r -> r.item == null || !r.item.equals(itemType)).sorted((Object r1, Object r2) ->
+        return myTeam.robots.stream().filter(r -> r.isAlive() && (r.item == null || !r.item.equals(itemType))).sorted((Object r1, Object r2) ->
                 Integer.compare(coord.distance(((Entity) r1).pos), coord.distance(((Entity) r2).pos))).findFirst();
     }
 

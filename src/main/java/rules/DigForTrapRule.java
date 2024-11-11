@@ -7,7 +7,11 @@ public class DigForTrapRule implements IRule {
     public Action evaluateAction(Board board, Entity currentRobot) {
         Action action = Action.none();
         if (currentRobot.item.equals(EntityType.TRAP)) {
-            Coord idealPos = board.getNearestIdealTrapPosition(currentRobot.pos);
+            Coord idealPos = board.getNearestObviousOpponentRadarPosition(currentRobot.pos);
+            if (idealPos == null) {
+                idealPos = board.getNearestIdealTrapPosition(currentRobot.pos);
+            }
+
             if (currentRobot.previousAction != null
                     && currentRobot.previousAction.message.equals(getMessage())) {
                 idealPos = currentRobot.previousAction.pos;
@@ -18,7 +22,11 @@ public class DigForTrapRule implements IRule {
             } else {
                 action = Action.dig(idealPos);
             }
-            action.efficiencyRate = EfficiencyRate.HIGH;
+            if (board.isThisPosIsSafe(idealPos)) {
+                action.efficiencyRate = EfficiencyRate.HIGH;
+            } else {
+                action.efficiencyRate = EfficiencyRate.USELESS;
+            }
         } else {
             action.efficiencyRate = EfficiencyRate.USELESS;
         }

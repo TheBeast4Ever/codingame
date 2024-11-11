@@ -14,6 +14,8 @@ public class Player {
         // game loop
         while (true) {
             board.update(in);
+            System.err.println("nbOfOrePos : " + board.myVisibleOrePos.size());
+            System.err.println("nbOfRadarPos : " + board.myRadarPos.size());
 
             ActionDecider decider = new ActionDecider();
             Entity[] robots = board.myTeam.robots.toArray(new Entity[board.myTeam.robots.size()]);
