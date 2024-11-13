@@ -14,7 +14,7 @@ public class MessagesHub {
 
     public void pub(Message message) {
         messages.add(message);
-        System.err.println("New message : " + message);
+        System.err.println("New message : " + message.content);
     }
 
     public Message consumeWithoutRemove() {

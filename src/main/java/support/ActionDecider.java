@@ -11,20 +11,15 @@ public class ActionDecider {
     
     public ActionDecider() {
         // Add rules here
-        rules.add(new KeepPreviousActionRule());
-        rules.add(new RandomMoveRule());
+        //rules.add(new KeepPreviousActionRule());
+        rules.add(new DigRandomRule());
         rules.add(new FollowOreFoundWithoutRadarRule());
         rules.add(new FollowOreFoundWithRadarRule());
         rules.add(new RequestRadarRule());
         rules.add(new DigForRadarRule());
         rules.add(new RequestTrapRule());
         rules.add(new DigForTrapRule());
-        // rules.add(new FollowOreAndDigRule());
         rules.add(new BackToHeadQuarterRule());
-
-        // rules.add(new DigHereForPutTrapRule());
-
-
     }
 
     public List<Action> computeEligibleActionsRankedByEfficiency(Board board, Entity allyRobot) {

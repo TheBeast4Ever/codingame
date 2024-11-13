@@ -1,4 +1,3 @@
-import rules.EfficiencyRate;
 import support.*;
 
 import java.util.*;
@@ -27,15 +26,16 @@ public class Player {
                     currentRobot.previousAction = myPreviousActionsByRobot.get(currentRobot.id);
                     if (currentRobot.previousAction.command.equals("DIG")) {
                         if (currentRobot.item.equals(EntityType.AMADEUSIUM)) {
-                            board.hub.pub(new Message("ORE-FOUND", "Ore found (" + currentRobot.pos + ")", currentRobot.pos,1));
+                            board.hub.pub(new Message("ORE-FOUND", "Ore found (" + currentRobot.previousAction.pos + ")", currentRobot.previousAction.pos,1));
                         } else if (currentRobot.item.equals(EntityType.NOTHING)) {
-                            emptyHoles.add(currentRobot.pos);
+                            emptyHoles.add(currentRobot.previousAction.pos);
+                            System.err.println("Empty hole at : " + currentRobot.previousAction.pos);
                         }
                     }
                 }
             }
 
-            board.myUnsuccessfulHoles = emptyHoles;
+            board.myEmptyVisitedHoles = emptyHoles;
 
             for(int i=0;i<5;i++) {
                 Entity currentRobot = robots[i];

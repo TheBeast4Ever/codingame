@@ -16,12 +16,12 @@ public class DigForTrapRule implements IRule {
                     && currentRobot.previousAction.message.equals(getMessage())) {
                 idealPos = currentRobot.previousAction.pos;
             }
-
-            if (!board.isTargetAccessibleFromActualPosition(idealPos, currentRobot.pos)) {
-                action = Action.move(idealPos);
-            } else {
+            if (idealPos.distance(currentRobot.pos) <= 1) {
                 action = Action.dig(idealPos);
+            } else {
+                action = Action.move(idealPos);
             }
+
             if (board.isThisPosIsSafe(idealPos)) {
                 action.efficiencyRate = EfficiencyRate.HIGH;
             } else {

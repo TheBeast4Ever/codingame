@@ -11,6 +11,7 @@ public class RequestRadarRule implements IRule {
         Action action = Action.request(EntityType.RADAR);
 
         if (board.myRadarCooldown==0
+                && board.myVisibleOrePos.size()<=MAX_VISIBLE_ORE_TO_REQUEST_RADAR
                 && currentRobot.item.equals(EntityType.NOTHING)
                 && board.whoIsMyAllyNearestFromHeadQuarter().isPresent()
                 && board.whoIsMyAllyNearestFromHeadQuarter().get().id == currentRobot.id) {

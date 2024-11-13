@@ -5,8 +5,9 @@ import support.*;
 public class FollowOreFoundWithoutRadarRule implements IRule {
     @Override
     public Action evaluateAction(Board board, Entity currentRobot) {
+        Action action;
         Coord coordToFollow = new Coord(0,0);
-        final EfficiencyRate[] efficiency = {EfficiencyRate.USELESS};
+         EfficiencyRate efficiency = EfficiencyRate.USELESS;
 
         if (messageOreFoundPublished(board)
                 && currentRobot.item.equals(EntityType.NOTHING)
@@ -15,23 +16,24 @@ public class FollowOreFoundWithoutRadarRule implements IRule {
             System.err.println("msg consumed by " + currentRobot.id);
             Message message = board.hub.consumeAndRemove();
             coordToFollow = message.pos;
-            efficiency[0] = EfficiencyRate.MAXIMUM;
+            efficiency = EfficiencyRate.MAXIMUM;
         } else if (currentRobot.previousAction != null
                 && currentRobot.previousAction.message.equals(getMessage())
-                && currentRobot.item.equals(EntityType.NOTHING)) {
+                && currentRobot.item.equals(EntityType.NOTHING)
+                && !board.myEmptyVisitedHoles.contains(currentRobot.previousAction.pos)) {
             coordToFollow = currentRobot.previousAction.pos;
-            efficiency[0] = EfficiencyRate.MAXIMUM;
+            efficiency = EfficiencyRate.MAXIMUM;
         }
-        Action action = Action.move(coordToFollow);
 
-        if (coordToFollow.equals(currentRobot.pos)
-                && board.isThisPosIsSafe(currentRobot.pos)) {
+        if (coordToFollow.distance(currentRobot.pos) <= 1) {
             action = Action.dig(coordToFollow);
-            action.message = "DIG 2";
         } else {
-            action.message = getMessage();
+            action = Action.move(coordToFollow);
         }
-        action.efficiencyRate = efficiency[0];
+
+        action.message = getMessage();
+
+        action.efficiencyRate = efficiency;
 
 
         return action;

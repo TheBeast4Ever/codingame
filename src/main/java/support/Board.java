@@ -23,7 +23,7 @@ public class Board {
 
     public Collection<Coord> myVisibleOrePos;
 
-    public Collection<Coord> myUnsuccessfulHoles = new ArrayList<Coord>();
+    public Collection<Coord> myEmptyVisitedHoles = new ArrayList<Coord>();
 
     public Integer roundNumber;
 
@@ -99,26 +99,27 @@ public class Board {
         return cells[pos.y][pos.x];
     }
 
-    public boolean isTargetAccessibleFromActualPosition(Coord target, Coord actualPos) {
-        List<Coord> coords = this.getAllCoordsAccessibleFrom(actualPos);
+    public boolean isTargetAccessibleFromActualPosition(Coord target, Coord actualPos, int maxDistance) {
+        List<Coord> coords = this.getAllCoordsAccessibleAndNotVisitedFrom(actualPos, maxDistance);
         return coords.contains(target);
     }
 
-    public List<Coord> getAllCoordsAccessibleFrom(Coord pos) {
-        final int MAX_DISTANCE = 4;
+    public List<Coord> getAllCoordsAccessibleAndNotVisitedFrom(Coord pos, int maxDistance) {
         List<Coord> coords = new ArrayList<>();
-        int minX = Math.max((pos.x - MAX_DISTANCE), 0);
-        int minY = Math.max((pos.y - MAX_DISTANCE), 0);
+        int minX = Math.max((pos.x - maxDistance), 1);
+        int minY = Math.max((pos.y - maxDistance), 0);
 
-        int maxX = Math.min((pos.x + MAX_DISTANCE), width-1);
-        int maxY = Math.min((pos.y + MAX_DISTANCE), height-1);
+        int maxX = Math.min((pos.x + maxDistance), width-1);
+        int maxY = Math.min((pos.y + maxDistance), height-1);
 
         for (int i=minX ; i<=maxX ; i++) {
             for (int j=minY ; j<=maxY ; j++) {
                 Coord currentCoord = new Coord(i,j);
-                int distanceFromPos = pos.distance(currentCoord);
-                if (distanceFromPos<=MAX_DISTANCE) {
-                    coords.add(currentCoord);
+                if (!getCell(currentCoord).hole) {
+                    int distanceFromPos = pos.distance(currentCoord);
+                    if (distanceFromPos <= maxDistance) {
+                        coords.add(currentCoord);
+                    }
                 }
             }
         }
@@ -136,7 +137,9 @@ public class Board {
         for (int x=2; x < width-1; x=x+5) {
             for (int y=3; y < height-1; y=y+5) {
                 Coord currCord = new Coord(x,y);
-                if (!myTrapPos.contains(currCord) && !myRadarPos.contains(currCord)) {
+                if (!myTrapPos.contains(currCord)
+                        && !myRadarPos.contains(currCord)
+                        && !getCell(currCord).hole) {
                     double currentDistance = currCord.distance(actualPosition);
                     if (currentDistance<bestDistance) {
                         bestDistance = currentDistance;
@@ -214,13 +217,14 @@ public class Board {
     }
 
     public boolean hasSafeVisibleOrePosition() {
-        return !this.myVisibleOrePos.isEmpty();
+        return !this.myVisibleOrePos.isEmpty()
+                && this.myVisibleOrePos.stream().filter(p->!this.getCell(p).hole).count()>0;
     }
 
-    public Coord getNearestVisibleOrePosition(Coord actualPosition) {
+    public Coord getSafeNearestVisibleOrePosition(Coord actualPosition) {
         Optional<Coord> nearestPosition = Optional.ofNullable(actualPosition);
 
-        nearestPosition = myVisibleOrePos.stream().sorted((Object c1, Object c2) ->
+        nearestPosition = myVisibleOrePos.stream().filter(p->!this.getCell(p).hole).sorted((Object c1, Object c2) ->
                 Integer.compare(actualPosition.distance(((Coord) c1)), actualPosition.distance(((Coord) c2)))).findFirst();
 
         return nearestPosition.get();

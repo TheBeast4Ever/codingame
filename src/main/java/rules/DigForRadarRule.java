@@ -14,11 +14,7 @@ public class DigForRadarRule implements IRule {
                 idealPos = currentRobot.previousAction.pos;
             }
 
-            if (!board.isTargetAccessibleFromActualPosition(idealPos, currentRobot.pos)) {
-                action = Action.move(idealPos);
-            } else {
-                action = Action.dig(idealPos);
-            }
+            action = Action.dig(idealPos);
             if (board.isThisPosIsSafe(idealPos)) {
                 action.efficiencyRate = EfficiencyRate.HIGH;
             } else {

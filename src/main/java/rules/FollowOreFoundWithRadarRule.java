@@ -6,23 +6,34 @@ public class FollowOreFoundWithRadarRule implements IRule {
 
     @Override
     public Action evaluateAction(Board board, Entity currentRobot) {
+        Action action;
         Coord coordToFollow = currentRobot.pos;
-        final EfficiencyRate[] efficiency = {EfficiencyRate.USELESS};
+        EfficiencyRate efficiency = EfficiencyRate.USELESS;
 
-        if (board.hasSafeVisibleOrePosition() && currentRobot.item.equals(EntityType.NOTHING)) {
-            coordToFollow = board.getNearestVisibleOrePosition(currentRobot.pos);
-            efficiency[0] = EfficiencyRate.MAXIMUM;
+        if (board.hasSafeVisibleOrePosition()
+                && currentRobot.item.equals(EntityType.NOTHING)) {
+            coordToFollow = board.getSafeNearestVisibleOrePosition(currentRobot.pos);
+            System.err.println(currentRobot.id + "-FOF1(: " + coordToFollow + ")-" + board.getCell(coordToFollow).hole);
+
+            efficiency= EfficiencyRate.MAXIMUM;
+        } else if (currentRobot.previousAction != null
+                && currentRobot.previousAction.message.equals(getMessage())
+                && currentRobot.item.equals(EntityType.NOTHING)
+                && !board.myEmptyVisitedHoles.contains(currentRobot.previousAction.pos)
+                && board.getCell(currentRobot.previousAction.pos).ore>0) {
+            coordToFollow = currentRobot.previousAction.pos;
+            efficiency = EfficiencyRate.MAXIMUM;
         }
-        Action action = Action.move(coordToFollow);
 
-        if (board.isTargetAccessibleFromActualPosition(coordToFollow, currentRobot.pos)
-                && board.isThisPosIsSafe(currentRobot.pos)) {
+        if (coordToFollow.distance(currentRobot.pos) <= 1) {
             action = Action.dig(coordToFollow);
-            action.message = "DIG 1";
         } else {
-            action.message = getMessage();
+            action = Action.move(coordToFollow);
         }
-        action.efficiencyRate = efficiency[0];
+
+        action.message = getMessage();
+
+        action.efficiencyRate = efficiency;
 
 
         return action;
