@@ -10,6 +10,8 @@ public class RequestTrapRule implements IRule {
 
         if (board.myTrapCooldown==0
                 && currentRobot.item.equals(EntityType.NOTHING)
+                && (currentRobot.previousAction != null
+                && (currentRobot.previousAction.message.equals(getMessage()) || currentRobot.previousAction.efficiencyRate.getValue()<EfficiencyRate.HIGH.getValue()))
                 && board.whoIsMyAllyNearestFromHeadQuarter().isPresent()
                 && board.whoIsMyAllyNearestFromHeadQuarter().get().id == currentRobot.id) {
             if (currentRobot.pos.x != 0) {

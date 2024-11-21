@@ -10,19 +10,21 @@ public class FollowOreFoundWithRadarRule implements IRule {
         Coord coordToFollow = currentRobot.pos;
         EfficiencyRate efficiency = EfficiencyRate.USELESS;
 
+        System.err.println(currentRobot.id + "-" + board.hasSafeVisibleOrePosition());
+
         if (board.hasSafeVisibleOrePosition()
                 && currentRobot.item.equals(EntityType.NOTHING)) {
             coordToFollow = board.getSafeNearestVisibleOrePosition(currentRobot.pos);
             System.err.println(currentRobot.id + "-FOF1(: " + coordToFollow + ")-" + board.getCell(coordToFollow).hole);
 
-            efficiency= EfficiencyRate.MAXIMUM;
+            efficiency= EfficiencyRate.HIGH;
         } else if (currentRobot.previousAction != null
                 && currentRobot.previousAction.message.equals(getMessage())
                 && currentRobot.item.equals(EntityType.NOTHING)
                 && !board.myEmptyVisitedHoles.contains(currentRobot.previousAction.pos)
                 && board.getCell(currentRobot.previousAction.pos).ore>0) {
             coordToFollow = currentRobot.previousAction.pos;
-            efficiency = EfficiencyRate.MAXIMUM;
+            efficiency = EfficiencyRate.HIGH;
         }
 
         if (coordToFollow.distance(currentRobot.pos) <= 1) {

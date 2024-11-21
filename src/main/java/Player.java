@@ -48,6 +48,12 @@ public class Player {
                         myPreviousActionsByRobot.put(currentRobot.id, bestActionToPerform.get());
                         actionsToPlay.put(currentRobot.id, bestActionToPerform.get());
                         System.err.println("Robot " + currentRobot.id + " perform action with efficiency " + bestActionToPerform.get().efficiencyRate);
+                        if (bestActionToPerform.get().command.equals("DIG")) {
+                            if (!board.myHoles.contains(bestActionToPerform.get().pos)
+                            && !board.getCell(bestActionToPerform.get().pos).hole) {
+                                board.myHoles.add(bestActionToPerform.get().pos);
+                            }
+                        }
                         System.out.println(bestActionToPerform.get());
                     } else  {
                         System.err.println("Strange for #" + currentRobot.id);

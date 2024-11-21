@@ -11,7 +11,7 @@ public class ActionDecider {
     
     public ActionDecider() {
         // Add rules here
-        //rules.add(new KeepPreviousActionRule());
+        rules.add(new KeepPreviousActionRule());
         rules.add(new DigRandomRule());
         rules.add(new FollowOreFoundWithoutRadarRule());
         rules.add(new FollowOreFoundWithRadarRule());

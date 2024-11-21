@@ -14,6 +14,8 @@ public class Entity {
     // Computed for my robots
     public Action previousAction;
 
+    public Coord previousPosition;
+
     public Entity(Scanner in) {
         id = in.nextInt();
         type = EntityType.valueOf(in.nextInt());

@@ -1,4 +1,4 @@
-//Version Wed Nov 13 08:48:56 CET 2024
+//Version Thu Nov 21 20:01:51 CET 2024
 import java.util.*;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 import static java.lang.Math.*;
 
 
@@ -16,7 +17,7 @@ class ActionDecider {
     
     public ActionDecider() {
         // Add rules here
-        //rules.add(new KeepPreviousActionRule());
+        rules.add(new KeepPreviousActionRule());
         rules.add(new DigRandomRule());
         rules.add(new FollowOreFoundWithoutRadarRule());
         rules.add(new FollowOreFoundWithRadarRule());
@@ -113,7 +114,7 @@ class DigRandomRule implements IRule {
                 System.err.println(currentRobot.id + "-RM1(: " + action.pos + ")-" + board.getCell(action.pos).hole);
                 action.efficiencyRate=EfficiencyRate.WEAK;
             } else {
-                coords = board.getAllCoordsAccessibleAndNotVisitedFrom(currentRobot.pos, 45);
+                coords = board.getAllCoordsAccessibleAndNotVisitedFrom(currentRobot.pos, 8);
                 if (!coords.isEmpty()) {
                     Coord targetPos = pickRandomCoordFrom(coords);
                     if (targetPos.distance(currentRobot.pos) == 1) {
@@ -250,6 +251,8 @@ class Entity {
     // Computed for my robots
     public Action previousAction;
 
+    public Coord previousPosition;
+
     public Entity(Scanner in) {
         id = in.nextInt();
         type = EntityType.valueOf(in.nextInt());
@@ -341,6 +344,12 @@ class Player {
                         myPreviousActionsByRobot.put(currentRobot.id, bestActionToPerform.get());
                         actionsToPlay.put(currentRobot.id, bestActionToPerform.get());
                         System.err.println("Robot " + currentRobot.id + " perform action with efficiency " + bestActionToPerform.get().efficiencyRate);
+                        if (bestActionToPerform.get().command.equals("DIG")) {
+                            if (!board.myHoles.contains(bestActionToPerform.get().pos)
+                            && !board.getCell(bestActionToPerform.get().pos).hole) {
+                                board.myHoles.add(bestActionToPerform.get().pos);
+                            }
+                        }
                         System.out.println(bestActionToPerform.get());
                     } else  {
                         System.err.println("Strange for #" + currentRobot.id);
@@ -464,8 +473,10 @@ class RequestRadarRule implements IRule {
         Action action = Action.request(EntityType.RADAR);
 
         if (board.myRadarCooldown==0
-                && board.myVisibleOrePos.size()<=MAX_VISIBLE_ORE_TO_REQUEST_RADAR
+                && board.nbOfSafeVisibleOrePosition()<=MAX_VISIBLE_ORE_TO_REQUEST_RADAR
                 && currentRobot.item.equals(EntityType.NOTHING)
+                && (currentRobot.previousAction != null
+                    && (currentRobot.previousAction.message.equals(getMessage()) || currentRobot.previousAction.efficiencyRate.getValue()<EfficiencyRate.HIGH.getValue()))
                 && board.whoIsMyAllyNearestFromHeadQuarter().isPresent()
                 && board.whoIsMyAllyNearestFromHeadQuarter().get().id == currentRobot.id) {
             if (currentRobot.pos.x != 0) {
@@ -571,6 +582,8 @@ class RequestTrapRule implements IRule {
 
         if (board.myTrapCooldown==0
                 && currentRobot.item.equals(EntityType.NOTHING)
+                && (currentRobot.previousAction != null
+                && (currentRobot.previousAction.message.equals(getMessage()) || currentRobot.previousAction.efficiencyRate.getValue()<EfficiencyRate.HIGH.getValue()))
                 && board.whoIsMyAllyNearestFromHeadQuarter().isPresent()
                 && board.whoIsMyAllyNearestFromHeadQuarter().get().id == currentRobot.id) {
             if (currentRobot.pos.x != 0) {
@@ -629,19 +642,21 @@ class FollowOreFoundWithRadarRule implements IRule {
         Coord coordToFollow = currentRobot.pos;
         EfficiencyRate efficiency = EfficiencyRate.USELESS;
 
+        System.err.println(currentRobot.id + "-" + board.hasSafeVisibleOrePosition());
+
         if (board.hasSafeVisibleOrePosition()
                 && currentRobot.item.equals(EntityType.NOTHING)) {
             coordToFollow = board.getSafeNearestVisibleOrePosition(currentRobot.pos);
             System.err.println(currentRobot.id + "-FOF1(: " + coordToFollow + ")-" + board.getCell(coordToFollow).hole);
 
-            efficiency= EfficiencyRate.MAXIMUM;
+            efficiency= EfficiencyRate.HIGH;
         } else if (currentRobot.previousAction != null
                 && currentRobot.previousAction.message.equals(getMessage())
                 && currentRobot.item.equals(EntityType.NOTHING)
                 && !board.myEmptyVisitedHoles.contains(currentRobot.previousAction.pos)
                 && board.getCell(currentRobot.previousAction.pos).ore>0) {
             coordToFollow = currentRobot.previousAction.pos;
-            efficiency = EfficiencyRate.MAXIMUM;
+            efficiency = EfficiencyRate.HIGH;
         }
 
         if (coordToFollow.distance(currentRobot.pos) <= 1) {
@@ -680,13 +695,23 @@ class Board {
     public Collection<Coord> myRadarPos;
     public Collection<Coord> myTrapPos;
 
-    public Collection<Coord> myObviousOpponentRadarPos = new ArrayList<Coord>();
+    public Collection<Coord> mySuspiciousOpponentRadarOrTrapPositions = new ArrayList<Coord>();
+
+    public Map<Integer, Coord> previousOpponentPositions = new HashMap<Integer, Coord>();
+
+    public Collection<Integer> myTrackedOpponentsId = new ArrayList<Integer>();
 
     public Collection<Coord> myPossibleTrapPositions;
 
     public Collection<Coord> myVisibleOrePos;
 
     public Collection<Coord> myEmptyVisitedHoles = new ArrayList<Coord>();
+
+    public Collection<Coord> opponentNewHoles = new ArrayList<Coord>();
+
+    public Collection<Coord> myHoles = new ArrayList<Coord>();
+
+    public Collection<Coord> opponentHoles = new ArrayList<Coord>();
 
     public Integer roundNumber;
 
@@ -704,12 +729,12 @@ class Board {
             for (int y=0; y < height-1; y=y+7) {
                 Coord currCord = new Coord(x,y);
                 if (!this.getCell(currCord).hole) {
-                    if (!myObviousOpponentRadarPos.contains(currCord)) {
-                        myObviousOpponentRadarPos.add(currCord);
+                    if (!mySuspiciousOpponentRadarOrTrapPositions.contains(currCord)) {
+                        mySuspiciousOpponentRadarOrTrapPositions.add(currCord);
                     }
                 } else {
-                    if (myObviousOpponentRadarPos.contains(currCord)) {
-                        myObviousOpponentRadarPos.remove(currCord);
+                    if (mySuspiciousOpponentRadarOrTrapPositions.contains(currCord)) {
+                        mySuspiciousOpponentRadarOrTrapPositions.remove(currCord);
                     }
                 }
             }
@@ -723,9 +748,17 @@ class Board {
         opponentTeam.readScore(in);
         cells = new Cell[height][width];
         myVisibleOrePos = new ArrayList<Coord>();
+        opponentNewHoles = new ArrayList<Coord>();
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 cells[y][x] = new Cell(in);
+                if (cells[y][x].hole) {
+                    if (!opponentHoles.contains(new Coord(x,y))
+                    && !myHoles.contains(new Coord(x,y))) {
+                        opponentNewHoles.add(new Coord(x,y));
+                        opponentHoles.add(new Coord(x,y));
+                    }
+                }
                 for (int i =0; i<cells[y][x].ore; i++) {
                     myVisibleOrePos.add(new Coord(x,y));
                 }
@@ -744,6 +777,27 @@ class Board {
                 myTeam.robots.add(entity);
             } else if (entity.type == EntityType.ENEMY_ROBOT) {
                 opponentTeam.robots.add(entity);
+                if (previousOpponentPositions.containsKey(entity.id)) {
+                    if (previousOpponentPositions.get(entity.id).equals(entity.pos)) {
+                        myTrackedOpponentsId.add(entity.id);
+                        System.err.println(entity.id + " tracked");
+                        if (previousOpponentPositions.get(entity.id).x == 0) {
+                            System.err.println("#" + entity.id
+                                    + " request item from " + previousOpponentPositions.get(entity.id));
+                        } else {
+                            List<Coord> potentialHoles = searchNewHoleByOpponent(previousOpponentPositions.get(entity.id));
+                            if (potentialHoles.size()==1) {
+                                System.err.println("#" + entity.id + " dug at " + potentialHoles.get(0));
+                            } else {
+                                System.err.println("#" + entity.id + " potential " + potentialHoles.size() + " holes");
+                            }
+
+                        }
+                    } else {
+                        myTrackedOpponentsId.remove(entity.id);
+                    }
+                }
+                previousOpponentPositions.put(entity.id, entity.pos);
             } else if (entity.type == EntityType.RADAR) {
                 myRadarPos.add(entity.pos);
             } else if (entity.type == EntityType.TRAP) {
@@ -753,6 +807,9 @@ class Board {
         initAndUpdateMyObviousOpponentRadarPos();
     }
 
+    private List<Coord> searchNewHoleByOpponent(Coord posFromDug) {
+        return opponentNewHoles.stream().filter(h -> h.distance(posFromDug)<=1).collect(Collectors.toList());
+    }
 
     public boolean cellExist(Coord pos) {
         return (pos.x >= 0) && (pos.y >= 0) && (pos.x < width) && (pos.y < height);
@@ -822,7 +879,7 @@ class Board {
         for (int x=1; x < width-1; x=x+7) {
             for (int y=0; y < height-1; y=y+7) {
                 Coord currCord = new Coord(x,y);
-                if (myObviousOpponentRadarPos.contains(currCord)) {
+                if (mySuspiciousOpponentRadarOrTrapPositions.contains(currCord)) {
                     double currentDistance = currCord.distance(actualPosition);
                     if (currentDistance<bestDistance) {
                         bestDistance = currentDistance;
@@ -882,6 +939,10 @@ class Board {
     public boolean hasSafeVisibleOrePosition() {
         return !this.myVisibleOrePos.isEmpty()
                 && this.myVisibleOrePos.stream().filter(p->!this.getCell(p).hole).count()>0;
+    }
+
+    public long nbOfSafeVisibleOrePosition() {
+        return this.myVisibleOrePos.stream().filter(p->!this.getCell(p).hole).count();
     }
 
     public Coord getSafeNearestVisibleOrePosition(Coord actualPosition) {

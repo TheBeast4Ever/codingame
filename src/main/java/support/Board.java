@@ -1,6 +1,7 @@
 package support;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Board {
     // Given at startup
@@ -17,13 +18,23 @@ public class Board {
     public Collection<Coord> myRadarPos;
     public Collection<Coord> myTrapPos;
 
-    public Collection<Coord> myObviousOpponentRadarPos = new ArrayList<Coord>();
+    public Collection<Coord> mySuspiciousOpponentRadarOrTrapPositions = new ArrayList<Coord>();
+
+    public Map<Integer, Coord> previousOpponentPositions = new HashMap<Integer, Coord>();
+
+    public Collection<Integer> myTrackedOpponentsId = new ArrayList<Integer>();
 
     public Collection<Coord> myPossibleTrapPositions;
 
     public Collection<Coord> myVisibleOrePos;
 
     public Collection<Coord> myEmptyVisitedHoles = new ArrayList<Coord>();
+
+    public Collection<Coord> opponentNewHoles = new ArrayList<Coord>();
+
+    public Collection<Coord> myHoles = new ArrayList<Coord>();
+
+    public Collection<Coord> opponentHoles = new ArrayList<Coord>();
 
     public Integer roundNumber;
 
@@ -41,12 +52,12 @@ public class Board {
             for (int y=0; y < height-1; y=y+7) {
                 Coord currCord = new Coord(x,y);
                 if (!this.getCell(currCord).hole) {
-                    if (!myObviousOpponentRadarPos.contains(currCord)) {
-                        myObviousOpponentRadarPos.add(currCord);
+                    if (!mySuspiciousOpponentRadarOrTrapPositions.contains(currCord)) {
+                        mySuspiciousOpponentRadarOrTrapPositions.add(currCord);
                     }
                 } else {
-                    if (myObviousOpponentRadarPos.contains(currCord)) {
-                        myObviousOpponentRadarPos.remove(currCord);
+                    if (mySuspiciousOpponentRadarOrTrapPositions.contains(currCord)) {
+                        mySuspiciousOpponentRadarOrTrapPositions.remove(currCord);
                     }
                 }
             }
@@ -60,9 +71,17 @@ public class Board {
         opponentTeam.readScore(in);
         cells = new Cell[height][width];
         myVisibleOrePos = new ArrayList<Coord>();
+        opponentNewHoles = new ArrayList<Coord>();
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 cells[y][x] = new Cell(in);
+                if (cells[y][x].hole) {
+                    if (!opponentHoles.contains(new Coord(x,y))
+                    && !myHoles.contains(new Coord(x,y))) {
+                        opponentNewHoles.add(new Coord(x,y));
+                        opponentHoles.add(new Coord(x,y));
+                    }
+                }
                 for (int i =0; i<cells[y][x].ore; i++) {
                     myVisibleOrePos.add(new Coord(x,y));
                 }
@@ -81,6 +100,27 @@ public class Board {
                 myTeam.robots.add(entity);
             } else if (entity.type == EntityType.ENEMY_ROBOT) {
                 opponentTeam.robots.add(entity);
+                if (previousOpponentPositions.containsKey(entity.id)) {
+                    if (previousOpponentPositions.get(entity.id).equals(entity.pos)) {
+                        myTrackedOpponentsId.add(entity.id);
+                        System.err.println(entity.id + " tracked");
+                        if (previousOpponentPositions.get(entity.id).x == 0) {
+                            System.err.println("#" + entity.id
+                                    + " request item from " + previousOpponentPositions.get(entity.id));
+                        } else {
+                            List<Coord> potentialHoles = searchNewHoleByOpponent(previousOpponentPositions.get(entity.id));
+                            if (potentialHoles.size()==1) {
+                                System.err.println("#" + entity.id + " dug at " + potentialHoles.get(0));
+                            } else {
+                                System.err.println("#" + entity.id + " potential " + potentialHoles.size() + " holes");
+                            }
+
+                        }
+                    } else {
+                        myTrackedOpponentsId.remove(entity.id);
+                    }
+                }
+                previousOpponentPositions.put(entity.id, entity.pos);
             } else if (entity.type == EntityType.RADAR) {
                 myRadarPos.add(entity.pos);
             } else if (entity.type == EntityType.TRAP) {
@@ -90,6 +130,9 @@ public class Board {
         initAndUpdateMyObviousOpponentRadarPos();
     }
 
+    private List<Coord> searchNewHoleByOpponent(Coord posFromDug) {
+        return opponentNewHoles.stream().filter(h -> h.distance(posFromDug)<=1).collect(Collectors.toList());
+    }
 
     public boolean cellExist(Coord pos) {
         return (pos.x >= 0) && (pos.y >= 0) && (pos.x < width) && (pos.y < height);
@@ -159,7 +202,7 @@ public class Board {
         for (int x=1; x < width-1; x=x+7) {
             for (int y=0; y < height-1; y=y+7) {
                 Coord currCord = new Coord(x,y);
-                if (myObviousOpponentRadarPos.contains(currCord)) {
+                if (mySuspiciousOpponentRadarOrTrapPositions.contains(currCord)) {
                     double currentDistance = currCord.distance(actualPosition);
                     if (currentDistance<bestDistance) {
                         bestDistance = currentDistance;
@@ -219,6 +262,10 @@ public class Board {
     public boolean hasSafeVisibleOrePosition() {
         return !this.myVisibleOrePos.isEmpty()
                 && this.myVisibleOrePos.stream().filter(p->!this.getCell(p).hole).count()>0;
+    }
+
+    public long nbOfSafeVisibleOrePosition() {
+        return this.myVisibleOrePos.stream().filter(p->!this.getCell(p).hole).count();
     }
 
     public Coord getSafeNearestVisibleOrePosition(Coord actualPosition) {

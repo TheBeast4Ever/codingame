@@ -29,7 +29,7 @@ public class DigRandomRule implements IRule {
                 System.err.println(currentRobot.id + "-RM1(: " + action.pos + ")-" + board.getCell(action.pos).hole);
                 action.efficiencyRate=EfficiencyRate.WEAK;
             } else {
-                coords = board.getAllCoordsAccessibleAndNotVisitedFrom(currentRobot.pos, 45);
+                coords = board.getAllCoordsAccessibleAndNotVisitedFrom(currentRobot.pos, 8);
                 if (!coords.isEmpty()) {
                     Coord targetPos = pickRandomCoordFrom(coords);
                     if (targetPos.distance(currentRobot.pos) == 1) {
